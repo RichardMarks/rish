@@ -340,6 +340,14 @@ int main()
     window.clear();
     window.setView(view);
     window.draw(mapVerts, &gfxTexture);
+    for (auto &item : mapItems)
+    {
+      auto &[visible, spr, id, coord] = item;
+      if (visible)
+      {
+        window.draw(*(spr.get()));
+      }
+    }
     if (isSpiderAlive)
     {
       window.draw(enemy);
