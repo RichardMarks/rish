@@ -130,9 +130,13 @@ int main()
 
           if (didHeroMove)
           {
-            heroColumn = heroX;
-            heroRow = heroY;
-            sprite.setPosition(sf::Vector2f(tileWidth * heroColumn, tileHeight * heroRow));
+            int tileId = map[heroX + heroY * mapWidth];
+            if (tileId == 48)
+            {
+              heroColumn = heroX;
+              heroRow = heroY;
+              sprite.setPosition(sf::Vector2f(tileWidth * heroColumn, tileHeight * heroRow));
+            }
           }
         }
       }
