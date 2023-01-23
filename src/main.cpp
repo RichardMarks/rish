@@ -29,6 +29,30 @@ int main()
         {
           window.close();
         }
+        else
+        {
+          float motionX = 0.0f;
+          float motionY = 0.0f;
+
+          if (event.key.code == sf::Keyboard::Up)
+          {
+            motionY = -1.0f;
+          }
+          else if (event.key.code == sf::Keyboard::Down)
+          {
+            motionY = 1.0f;
+          }
+          else if (event.key.code == sf::Keyboard::Left)
+          {
+            motionX = -1.0f;
+          }
+          else if (event.key.code == sf::Keyboard::Right)
+          {
+            motionX = 1.0f;
+          }
+
+          sprite.move(sf::Vector2f(motionX, motionY));
+        }
       }
     }
     window.clear();
