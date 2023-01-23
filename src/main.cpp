@@ -1,6 +1,7 @@
 #include <iostream>
 #include <tuple>
 #include <vector>
+#include <unordered_map>
 #include <SFML/Graphics.hpp>
 
 int main()
@@ -106,6 +107,41 @@ int main()
     spr->setPosition(sf::Vector2f(coord.first * tileWidth, coord.second * tileHeight));
     mapItems.push_back(std::move(item));
   }
+
+  std::unordered_map<int, std::string> itemNameDB;
+  itemNameDB.emplace(114, "Health Potion");
+  itemNameDB.emplace(116, "Mana Potion");
+
+  typedef std::tuple<std::shared_ptr<MapItem>, std::unique_ptr<sf::Sprite>, std::unique_ptr<sf::Text>> InventoryItem;
+  std::vector<InventoryItem> heroItems;
+
+  auto collectMapItem = [&](MapItem *itemCollected)
+  {
+    auto &[visible, spr, id, coord] = *itemCollected;
+    InventoryItem inventoryItem = std::make_tuple(
+        std::shared_ptr<MapItem>(itemCollected, [](MapItem *) {}),
+        std::make_unique<sf::Sprite>(),
+        std::make_unique<sf::Text>());
+    auto &inventorySprite = std::get<1>(inventoryItem);
+    auto &inventoryText = std::get<2>(inventoryItem);
+
+    inventorySprite->setTexture(*(spr->getTexture()));
+    inventorySprite->setTextureRect(spr->getTextureRect());
+    float uiMargin = 4.0f;
+    float uiX = view.getSize().x - (uiMargin + (inventorySprite->getTextureRect().width * inventorySprite->getScale().x));
+    float uiY = uiMargin + (static_cast<float>(heroItems.size()) * (inventorySprite->getTextureRect().height * inventorySprite->getScale().y));
+    inventorySprite->setPosition(sf::Vector2f(uiX, uiY));
+
+    inventoryText->setFont(font);
+    inventoryText->setCharacterSize(24);
+    inventoryText->setOutlineThickness(4);
+    inventoryText->setString("[" + std::to_string(heroItems.size() + 1) + "] " + itemNameDB.at(id));
+    inventoryText->setScale(sf::Vector2f(0.5f, 0.33f));
+    auto textBounds = inventoryText->getLocalBounds();
+    inventoryText->setPosition(sf::Vector2f(uiX - ((textBounds.width * inventoryText->getScale().x) + uiMargin), uiY));
+
+    heroItems.push_back(std::move(inventoryItem));
+  };
 
   sprite.setTextureRect(sf::IntRect(tileWidth, 8 * tileHeight, tileWidth, tileHeight));
   enemy.setTextureRect(sf::IntRect(2 * tileWidth, 10 * tileHeight, tileWidth, tileHeight));
@@ -262,8 +298,8 @@ int main()
                 {
                   if (coord.first == heroColumn && coord.second == heroRow)
                   {
-                    std::cout << "hero collected item " << id << " at " << heroColumn << ", " << heroRow << std::endl;
                     std::get<0>(item) = false;
+                    collectMapItem(&item);
                   }
                 }
               }
@@ -371,7 +407,13 @@ int main()
       window.draw(sprite);
       window.draw(heroHealthBarShape);
     }
-    window.draw(text);
+    for (auto &heroItem : heroItems)
+    {
+      auto &[mapItem, inventorySprite, inventoryText] = heroItem;
+      window.draw(*(inventorySprite.get()));
+      window.draw(*(inventoryText.get()));
+    }
+    // window.draw(text);
     window.display();
   }
 
