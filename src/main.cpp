@@ -18,7 +18,9 @@ int main()
   }
 
   sf::Sprite sprite;
+  sf::Sprite enemy;
   sprite.setTexture(gfxTexture);
+  enemy.setTexture(gfxTexture);
 
   sf::Text text;
   text.setFont(font);
@@ -69,10 +71,17 @@ int main()
   }
 
   sprite.setTextureRect(sf::IntRect(tileWidth, 8 * tileHeight, tileWidth, tileHeight));
+  enemy.setTextureRect(sf::IntRect(2 * tileWidth, 10 * tileHeight, tileWidth, tileHeight));
 
   int heroColumn = 3;
   int heroRow = 3;
+  bool isHeroAlive = true;
+
+  int spiderColumn = 5;
+  int spiderRow = 1;
+
   sprite.setPosition(sf::Vector2f(tileWidth * heroColumn, tileHeight * heroRow));
+  enemy.setPosition(sf::Vector2f(tileWidth * spiderColumn, tileHeight * spiderRow));
 
   while (window.isOpen())
   {
@@ -136,6 +145,11 @@ int main()
               heroColumn = heroX;
               heroRow = heroY;
               sprite.setPosition(sf::Vector2f(tileWidth * heroColumn, tileHeight * heroRow));
+
+              if (heroColumn == spiderColumn && heroRow == spiderRow)
+              {
+                isHeroAlive = false;
+              }
             }
           }
         }
@@ -143,7 +157,11 @@ int main()
     }
     window.clear();
     window.draw(mapVerts, &gfxTexture);
-    window.draw(sprite);
+    window.draw(enemy);
+    if (isHeroAlive)
+    {
+      window.draw(sprite);
+    }
     window.draw(text);
     window.display();
   }
