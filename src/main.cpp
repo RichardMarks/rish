@@ -121,6 +121,10 @@ int main()
   int spiderMaxHealth = 15;
 
   bool spiderWasDamaged = false;
+  bool spiderIsResting = false;
+
+  float spiderRestTime = 0.0f;
+  float spiderTimeToRest = 2.0f;
 
   sf::RectangleShape spiderHealthBarShape;
   spiderHealthBarShape.setFillColor(sf::Color::Red);
@@ -223,13 +227,25 @@ int main()
 
     sf::Time deltaTime = clock.restart();
 
-    float dt = deltaTime.asSeconds();
-    spiderTime += dt;
     bool shouldSpiderMove = false;
-    if (spiderTime >= spiderTimeToMove)
+    float dt = deltaTime.asSeconds();
+    if (spiderIsResting)
     {
-      spiderTime -= spiderTimeToMove;
-      shouldSpiderMove = true;
+      spiderRestTime += dt;
+      if (spiderRestTime >= spiderTimeToRest)
+      {
+        spiderRestTime -= spiderTimeToRest;
+        spiderIsResting = false;
+      }
+    }
+    else
+    {
+      spiderTime += dt;
+      if (spiderTime >= spiderTimeToMove)
+      {
+        spiderTime -= spiderTimeToMove;
+        shouldSpiderMove = true;
+      }
     }
 
     if (shouldSpiderMove)
@@ -271,6 +287,7 @@ int main()
 
     if (spiderWasDamaged)
     {
+      spiderIsResting = true;
       spiderWasDamaged = false;
       float currentHealth = static_cast<float>(spiderHealth);
       float maxHealth = static_cast<float>(spiderMaxHealth);
