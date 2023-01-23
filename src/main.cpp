@@ -26,6 +26,48 @@ int main()
   text.setOutlineThickness(1);
   text.setString("Hello, World!");
 
+  int mapWidth = 7;
+  int mapHeight = 7;
+
+  int map[] = {
+      // map tile ids
+      40, 40, 40, 40, 40, 40, 40,
+      40, 48, 48, 48, 48, 48, 40,
+      40, 48, 48, 48, 48, 48, 40,
+      40, 48, 48, 48, 48, 48, 40,
+      40, 48, 48, 48, 48, 48, 40,
+      40, 48, 48, 48, 48, 48, 40,
+      40, 40, 40, 40, 40, 40, 40,
+      //
+  };
+
+  int tileWidth = 16;
+  int tileHeight = 16;
+  int numTilesAcrossTexture = gfxTexture.getSize().x / tileWidth;
+  int numTilesDownTexture = gfxTexture.getSize().y / tileHeight;
+
+  sf::VertexArray mapVerts;
+  mapVerts.setPrimitiveType(sf::PrimitiveType::Quads);
+  mapVerts.resize(4 * mapWidth * mapHeight);
+
+  for (int i = 0; i < mapWidth * mapHeight; i++)
+  {
+    int x = i % mapWidth;
+    int y = i / mapWidth;
+    int tileId = map[i];
+    int tileU = tileId % numTilesAcrossTexture;
+    int tileV = tileId / numTilesDownTexture;
+    sf::Vertex *quad = &mapVerts[4 * (x + y * mapWidth)];
+    quad[0].position = sf::Vector2f(x * tileWidth, y * tileHeight);
+    quad[1].position = sf::Vector2f((x + 1) * tileWidth, y * tileHeight);
+    quad[2].position = sf::Vector2f((x + 1) * tileWidth, (y + 1) * tileHeight);
+    quad[3].position = sf::Vector2f(x * tileWidth, (y + 1) * tileHeight);
+    quad[0].texCoords = sf::Vector2f(tileU * tileWidth, tileV * tileHeight);
+    quad[1].texCoords = sf::Vector2f((tileU + 1) * tileWidth, tileV * tileHeight);
+    quad[2].texCoords = sf::Vector2f((tileU + 1) * tileWidth, (tileV + 1) * tileHeight);
+    quad[3].texCoords = sf::Vector2f(tileU * tileWidth, (tileV + 1) * tileHeight);
+  }
+
   while (window.isOpen())
   {
     sf::Event event;
@@ -69,6 +111,7 @@ int main()
     }
     window.clear();
     window.draw(sprite);
+    window.draw(mapVerts, &gfxTexture);
     window.draw(text);
     window.display();
   }
