@@ -80,6 +80,32 @@ int main()
     quad[3].texCoords = sf::Vector2f(tileU * tileWidth, (tileV + 1) * tileHeight);
   }
 
+  int mapItemDataIndex = mapWidth * mapHeight;
+
+  typedef std::tuple<bool, std::unique_ptr<sf::Sprite>, int, std::pair<int, int>> MapItem;
+  std::vector<MapItem> mapItems;
+
+  int numMapItems = map[mapItemDataIndex];
+  for (int i = 0; i < numMapItems; i++)
+  {
+    int itemId = map[mapItemDataIndex + 1 + i * 3];
+    int itemColumn = map[mapItemDataIndex + 1 + (i * 3) + 1];
+    int itemRow = map[mapItemDataIndex + 1 + (i * 3) + 2];
+
+    MapItem item = std::make_tuple(
+        true,
+        std::make_unique<sf::Sprite>(),
+        itemId,
+        std::make_pair(itemColumn, itemRow));
+    auto &[visible, spr, id, coord] = item;
+    spr->setTexture(gfxTexture);
+    int srcX = id % numTilesAcrossTexture;
+    int srcY = id / numTilesAcrossTexture;
+    spr->setTextureRect(sf::IntRect(srcX * tileWidth, srcY * tileHeight, tileWidth, tileHeight));
+    spr->setPosition(sf::Vector2f(coord.first * tileWidth, coord.second * tileHeight));
+    mapItems.push_back(std::move(item));
+  }
+
   sprite.setTextureRect(sf::IntRect(tileWidth, 8 * tileHeight, tileWidth, tileHeight));
   enemy.setTextureRect(sf::IntRect(2 * tileWidth, 10 * tileHeight, tileWidth, tileHeight));
 
