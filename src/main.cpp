@@ -11,6 +11,12 @@ int main()
     throw std::runtime_error("Unable to load assets/gfx.png");
   }
 
+  sf::Font font;
+  if (!font.loadFromFile("assets/Px437_DOS-V_re_JPN16.ttf"))
+  {
+    throw std::runtime_error("Unable to load assets/Px437_DOS-V_re_JPN16.ttf");
+  }
+
   sf::Sprite sprite;
   sprite.setTexture(gfxTexture);
 
