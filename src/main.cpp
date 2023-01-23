@@ -254,6 +254,18 @@ int main()
                 sprite.setPosition(sf::Vector2f(tileWidth * heroColumn, tileHeight * heroRow));
                 heroHealthBarShape.setPosition(sprite.getPosition() + sf::Vector2f(0, tileHeight));
               }
+              for (auto &item : mapItems)
+              {
+                auto &[visible, spr, id, coord] = item;
+                if (visible)
+                {
+                  if (coord.first == heroColumn && coord.second == heroRow)
+                  {
+                    std::cout << "hero collected item " << id << " at " << heroColumn << ", " << heroRow << std::endl;
+                    std::get<0>(item) = false;
+                  }
+                }
+              }
             }
           }
         }
