@@ -79,6 +79,7 @@ int main()
 
   int spiderColumn = 5;
   int spiderRow = 1;
+  bool isSpiderAlive = true;
 
   sprite.setPosition(sf::Vector2f(tileWidth * heroColumn, tileHeight * heroRow));
   enemy.setPosition(sf::Vector2f(tileWidth * spiderColumn, tileHeight * spiderRow));
@@ -100,6 +101,18 @@ int main()
         }
         else
         {
+          if (event.key.code == sf::Keyboard::Space)
+          {
+            bool hitAbove = heroRow - 1 == spiderRow && heroColumn == spiderColumn;
+            bool hitBelow = heroRow + 1 == spiderRow && heroColumn == spiderColumn;
+            bool hitLeft = heroRow == spiderRow && heroColumn - 1 == spiderColumn;
+            bool hitRight = heroRow == spiderRow && heroColumn + 1 == spiderColumn;
+            bool hitSpider = hitAbove || hitBelow || hitLeft || hitRight;
+            if (hitSpider)
+            {
+              isSpiderAlive = false;
+            }
+          }
           bool didHeroMove = false;
           int heroX = heroColumn;
           int heroY = heroRow;
@@ -157,7 +170,10 @@ int main()
     }
     window.clear();
     window.draw(mapVerts, &gfxTexture);
-    window.draw(enemy);
+    if (isSpiderAlive)
+    {
+      window.draw(enemy);
+    }
     if (isHeroAlive)
     {
       window.draw(sprite);
