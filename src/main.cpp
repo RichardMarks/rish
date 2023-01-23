@@ -20,6 +20,12 @@ int main()
   sf::Sprite sprite;
   sprite.setTexture(gfxTexture);
 
+  sf::Text text;
+  text.setFont(font);
+  text.setCharacterSize(16);
+  text.setOutlineThickness(1);
+  text.setString("Hello, World!");
+
   while (window.isOpen())
   {
     sf::Event event;
@@ -63,6 +69,7 @@ int main()
     }
     window.clear();
     window.draw(sprite);
+    window.draw(text);
     window.display();
   }
 
