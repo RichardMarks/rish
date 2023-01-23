@@ -107,6 +107,11 @@ int main()
   int spiderCurrentPathIndex = 0;
   int spiderFinalPathIndex = (sizeof(spiderPath) / (2 * sizeof(int))) - 1;
 
+  sf::RectangleShape heroHealthBarShape;
+  heroHealthBarShape.setFillColor(sf::Color::Green);
+  heroHealthBarShape.setSize(sf::Vector2f(16, 2));
+  heroHealthBarShape.setPosition(sprite.getPosition() + sf::Vector2f(0, 1 + tileHeight));
+
   while (window.isOpen())
   {
     sf::Event event;
@@ -182,6 +187,8 @@ int main()
               heroRow = heroY;
               sprite.setPosition(sf::Vector2f(tileWidth * heroColumn, tileHeight * heroRow));
 
+              heroHealthBarShape.setPosition(sprite.getPosition() + sf::Vector2f(0, tileHeight));
+
               if (heroColumn == spiderColumn && heroRow == spiderRow)
               {
                 isHeroAlive = false;
@@ -227,6 +234,7 @@ int main()
     if (isHeroAlive)
     {
       window.draw(sprite);
+      window.draw(heroHealthBarShape);
     }
     window.draw(text);
     window.display();
