@@ -85,6 +85,28 @@ int main()
   sprite.setPosition(sf::Vector2f(tileWidth * heroColumn, tileHeight * heroRow));
   enemy.setPosition(sf::Vector2f(tileWidth * spiderColumn, tileHeight * spiderRow));
 
+  sf::Clock clock;
+  sf::Time elapsed;
+
+  float spiderTime = 0.0f;
+  float spiderTimeToMove = 1.0f;
+
+  int spiderPath[] = {
+      // pairs of tile coordinates to move the spider to each movement pass
+      5, 2,
+      5, 3,
+      5, 4,
+      5, 5,
+      5, 4,
+      5, 3,
+      5, 2,
+      5, 1,
+      //
+  };
+
+  int spiderCurrentPathIndex = 0;
+  int spiderFinalPathIndex = (sizeof(spiderPath) / (2 * sizeof(int))) - 1;
+
   while (window.isOpen())
   {
     sf::Event event;
@@ -169,6 +191,32 @@ int main()
         }
       }
     }
+
+    sf::Time deltaTime = clock.restart();
+
+    float dt = deltaTime.asSeconds();
+    spiderTime += dt;
+    bool shouldSpiderMove = false;
+    if (spiderTime >= spiderTimeToMove)
+    {
+      spiderTime -= spiderTimeToMove;
+      shouldSpiderMove = true;
+    }
+
+    if (shouldSpiderMove)
+    {
+      int nextSpiderColumn = spiderPath[0 + spiderCurrentPathIndex * 2];
+      int nextSpiderRow = spiderPath[1 + spiderCurrentPathIndex * 2];
+      spiderColumn = nextSpiderColumn;
+      spiderRow = nextSpiderRow;
+      enemy.setPosition(sf::Vector2f(tileWidth * spiderColumn, tileHeight * spiderRow));
+      spiderCurrentPathIndex += 1;
+      if (spiderCurrentPathIndex > spiderFinalPathIndex)
+      {
+        spiderCurrentPathIndex = 0;
+      }
+    }
+
     window.clear();
     window.setView(view);
     window.draw(mapVerts, &gfxTexture);
