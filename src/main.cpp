@@ -117,6 +117,11 @@ int main()
 
   bool heroWasDamaged = false;
 
+  sf::RectangleShape spiderHealthBarShape;
+  spiderHealthBarShape.setFillColor(sf::Color::Red);
+  spiderHealthBarShape.setSize(sf::Vector2f(16, 2));
+  spiderHealthBarShape.setPosition(enemy.getPosition() + sf::Vector2f(0, 1 + tileHeight));
+
   while (window.isOpen())
   {
     sf::Event event;
@@ -234,6 +239,7 @@ int main()
       spiderColumn = nextSpiderColumn;
       spiderRow = nextSpiderRow;
       enemy.setPosition(sf::Vector2f(tileWidth * spiderColumn, tileHeight * spiderRow));
+      spiderHealthBarShape.setPosition(enemy.getPosition() + sf::Vector2f(0, 1 + tileHeight));
       spiderCurrentPathIndex += 1;
       if (spiderCurrentPathIndex > spiderFinalPathIndex)
       {
@@ -263,6 +269,7 @@ int main()
     if (isSpiderAlive)
     {
       window.draw(enemy);
+      window.draw(spiderHealthBarShape);
     }
     if (isHeroAlive)
     {
