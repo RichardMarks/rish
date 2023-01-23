@@ -5,6 +5,15 @@ int main()
 {
   sf::RenderWindow window(sf::VideoMode(320, 240), "rish");
 
+  sf::Texture gfxTexture;
+  if (!gfxTexture.loadFromFile("assets/gfx.png"))
+  {
+    throw std::runtime_error("Unable to load assets/gfx.png");
+  }
+
+  sf::Sprite sprite;
+  sprite.setTexture(gfxTexture);
+
   while (window.isOpen())
   {
     sf::Event event;
@@ -23,6 +32,7 @@ int main()
       }
     }
     window.clear();
+    window.draw(sprite);
     window.display();
   }
 
