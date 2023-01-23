@@ -56,7 +56,6 @@ int main()
   int tileWidth = 16;
   int tileHeight = 16;
   int numTilesAcrossTexture = gfxTexture.getSize().x / tileWidth;
-  int numTilesDownTexture = gfxTexture.getSize().y / tileHeight;
 
   sf::VertexArray mapVerts;
   mapVerts.setPrimitiveType(sf::PrimitiveType::Quads);
@@ -68,7 +67,7 @@ int main()
     int y = i / mapWidth;
     int tileId = map[i];
     int tileU = tileId % numTilesAcrossTexture;
-    int tileV = tileId / numTilesDownTexture;
+    int tileV = tileId / numTilesAcrossTexture;
     sf::Vertex *quad = &mapVerts[4 * (x + y * mapWidth)];
     quad[0].position = sf::Vector2f(x * tileWidth, y * tileHeight);
     quad[1].position = sf::Vector2f((x + 1) * tileWidth, y * tileHeight);
