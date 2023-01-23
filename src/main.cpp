@@ -1,4 +1,6 @@
 #include <iostream>
+#include <tuple>
+#include <vector>
 #include <SFML/Graphics.hpp>
 
 int main()
