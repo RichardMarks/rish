@@ -68,6 +68,12 @@ int main()
     quad[3].texCoords = sf::Vector2f(tileU * tileWidth, (tileV + 1) * tileHeight);
   }
 
+  sprite.setTextureRect(sf::IntRect(tileWidth, 8 * tileHeight, tileWidth, tileHeight));
+
+  int heroColumn = 3;
+  int heroRow = 3;
+  sprite.setPosition(sf::Vector2f(tileWidth * heroColumn, tileHeight * heroRow));
+
   while (window.isOpen())
   {
     sf::Event event;
@@ -85,33 +91,55 @@ int main()
         }
         else
         {
-          float motionX = 0.0f;
-          float motionY = 0.0f;
+          bool didHeroMove = false;
+          int heroX = heroColumn;
+          int heroY = heroRow;
 
           if (event.key.code == sf::Keyboard::Up)
           {
-            motionY = -1.0f;
+            if (heroY > 0)
+            {
+              heroY -= 1;
+              didHeroMove = true;
+            }
           }
           else if (event.key.code == sf::Keyboard::Down)
           {
-            motionY = 1.0f;
+            if (heroY < mapHeight - 1)
+            {
+              heroY += 1;
+              didHeroMove = true;
+            }
           }
           else if (event.key.code == sf::Keyboard::Left)
           {
-            motionX = -1.0f;
+            if (heroX > 0)
+            {
+              heroX -= 1;
+              didHeroMove = true;
+            }
           }
           else if (event.key.code == sf::Keyboard::Right)
           {
-            motionX = 1.0f;
+            if (heroX < mapWidth - 1)
+            {
+              heroX += 1;
+              didHeroMove = true;
+            }
           }
 
-          sprite.move(sf::Vector2f(motionX, motionY));
+          if (didHeroMove)
+          {
+            heroColumn = heroX;
+            heroRow = heroY;
+            sprite.setPosition(sf::Vector2f(tileWidth * heroColumn, tileHeight * heroRow));
+          }
         }
       }
     }
     window.clear();
-    window.draw(sprite);
     window.draw(mapVerts, &gfxTexture);
+    window.draw(sprite);
     window.draw(text);
     window.display();
   }
