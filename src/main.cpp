@@ -117,6 +117,11 @@ int main()
 
   bool heroWasDamaged = false;
 
+  int spiderHealth = 15;
+  int spiderMaxHealth = 15;
+
+  bool spiderWasDamaged = false;
+
   sf::RectangleShape spiderHealthBarShape;
   spiderHealthBarShape.setFillColor(sf::Color::Red);
   spiderHealthBarShape.setSize(sf::Vector2f(16, 2));
@@ -148,7 +153,8 @@ int main()
             bool hitSpider = hitAbove || hitBelow || hitLeft || hitRight;
             if (hitSpider)
             {
-              isSpiderAlive = false;
+              spiderWasDamaged = true;
+              // isSpiderAlive = false;
             }
           }
           bool didHeroMove = false;
@@ -260,6 +266,22 @@ int main()
       {
         heroHealth = 0;
         isHeroAlive = false;
+      }
+    }
+
+    if (spiderWasDamaged)
+    {
+      spiderWasDamaged = false;
+      float currentHealth = static_cast<float>(spiderHealth);
+      float maxHealth = static_cast<float>(spiderMaxHealth);
+      float reducedHealth = currentHealth - (maxHealth / 3);
+      spiderHealth = static_cast<int>(reducedHealth);
+      float healthFill = 16 * (static_cast<float>(spiderHealth) / static_cast<float>(spiderMaxHealth));
+      spiderHealthBarShape.setSize(sf::Vector2f(healthFill, 2));
+      if (spiderHealth <= 0)
+      {
+        spiderHealth = 0;
+        isSpiderAlive = false;
       }
     }
 
