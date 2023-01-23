@@ -3,7 +3,8 @@
 
 int main()
 {
-  sf::RenderWindow window(sf::VideoMode(320, 240), "rish");
+  sf::RenderWindow window(sf::VideoMode(1920, 1440), "rish");
+  sf::View view(sf::FloatRect(0, 0, 320, 240));
 
   sf::Texture gfxTexture;
   if (!gfxTexture.loadFromFile("assets/gfx.png"))
@@ -169,6 +170,7 @@ int main()
       }
     }
     window.clear();
+    window.setView(view);
     window.draw(mapVerts, &gfxTexture);
     if (isSpiderAlive)
     {
