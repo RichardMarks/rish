@@ -42,6 +42,15 @@ int main()
       40, 48, 48, 48, 48, 48, 40,
       40, 40, 40, 40, 40, 40, 40,
       //
+      // BEGIN ITEMS DATA SECTION
+      // NUM_ITEMS
+      2,
+      // ITEM_ID, COLUMN, ROW,
+      // 114 - health potion
+      // 116 - mana potion
+      114, 2, 2,
+      116, 4, 5,
+      //
   };
 
   int tileWidth = 16;
