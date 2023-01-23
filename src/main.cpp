@@ -112,6 +112,11 @@ int main()
   heroHealthBarShape.setSize(sf::Vector2f(16, 2));
   heroHealthBarShape.setPosition(sprite.getPosition() + sf::Vector2f(0, 1 + tileHeight));
 
+  int heroHealth = 30;
+  int heroMaxHealth = 30;
+
+  bool heroWasDamaged = false;
+
   while (window.isOpen())
   {
     sf::Event event;
@@ -183,6 +188,8 @@ int main()
             int tileId = map[heroX + heroY * mapWidth];
             if (tileId == 48)
             {
+              int lastColumn = heroColumn;
+              int lastRow = heroRow;
               heroColumn = heroX;
               heroRow = heroY;
               sprite.setPosition(sf::Vector2f(tileWidth * heroColumn, tileHeight * heroRow));
@@ -191,7 +198,11 @@ int main()
 
               if (heroColumn == spiderColumn && heroRow == spiderRow)
               {
-                isHeroAlive = false;
+                heroWasDamaged = true;
+                heroColumn = lastColumn;
+                heroRow = lastRow;
+                sprite.setPosition(sf::Vector2f(tileWidth * heroColumn, tileHeight * heroRow));
+                heroHealthBarShape.setPosition(sprite.getPosition() + sf::Vector2f(0, tileHeight));
               }
             }
           }
@@ -214,6 +225,12 @@ int main()
     {
       int nextSpiderColumn = spiderPath[0 + spiderCurrentPathIndex * 2];
       int nextSpiderRow = spiderPath[1 + spiderCurrentPathIndex * 2];
+
+      if (!heroWasDamaged && (heroColumn == nextSpiderColumn && heroRow == nextSpiderRow))
+      {
+        heroWasDamaged = true;
+      }
+
       spiderColumn = nextSpiderColumn;
       spiderRow = nextSpiderRow;
       enemy.setPosition(sf::Vector2f(tileWidth * spiderColumn, tileHeight * spiderRow));
@@ -221,6 +238,22 @@ int main()
       if (spiderCurrentPathIndex > spiderFinalPathIndex)
       {
         spiderCurrentPathIndex = 0;
+      }
+    }
+
+    if (heroWasDamaged)
+    {
+      heroWasDamaged = false;
+      float currentHealth = static_cast<float>(heroHealth);
+      float maxHealth = static_cast<float>(heroMaxHealth);
+      float reducedHealth = currentHealth - (maxHealth * 0.25f);
+      heroHealth = static_cast<int>(reducedHealth);
+      float healthFill = 16 * (static_cast<float>(heroHealth) / static_cast<float>(heroMaxHealth));
+      heroHealthBarShape.setSize(sf::Vector2f(healthFill, 2));
+      if (heroHealth <= 0)
+      {
+        heroHealth = 0;
+        isHeroAlive = false;
       }
     }
 
