@@ -47,11 +47,12 @@ int main()
       //
       // BEGIN ITEMS DATA SECTION
       // NUM_ITEMS
-      2,
+      3,
       // ITEM_ID, COLUMN, ROW,
       // 114 - health potion
       // 116 - mana potion
       114, 2, 2,
+      114, 4, 3,
       116, 4, 5,
       //
   };
