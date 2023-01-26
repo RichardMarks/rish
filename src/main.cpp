@@ -17,9 +17,12 @@ constexpr int TILE_HEIGHT = 16;
 
 constexpr int FIELD_ITEM = 1;
 constexpr int INVENTORY_ITEM = 2;
-// constexpr int USED_INVENTORY_ITEM = 3;
+constexpr int USED_INVENTORY_ITEM = 3;
 
 // typedefs
+
+typedef std::function<bool()> BoolFn;
+typedef std::function<void()> VoidFn;
 
 typedef int MapItemState;
 typedef int MapItemId;
@@ -33,13 +36,72 @@ typedef std::unique_ptr<sf::Text> InventoryItemUIText;
 typedef std::tuple<InventoryItemRef, InventoryItemUISprite, InventoryItemUIText> InventoryItem;
 
 typedef int TileId;
-typedef std::unordered_map<TileId, std::string> ItemNameDatabase;
 
-void buildItemNameDatabase(ItemNameDatabase &db);
-void buildItemNameDatabase(ItemNameDatabase &db)
+/*
+
+Item
+
+  map: {
+    [TileId]: (
+      Name,
+      Kind,
+      CanUse,
+      Use,
+    )
+  }
+
+*/
+
+typedef std::string ItemDBEntryName;
+typedef int ItemDBEntryKind;
+typedef std::tuple<ItemDBEntryName, ItemDBEntryKind, BoolFn, VoidFn> ItemDBEntry;
+typedef std::unordered_map<TileId, ItemDBEntry> ItemDB;
+
+void itemDBAdd(ItemDB &db, TileId tileId, const ItemDBEntryName &name, ItemDBEntryKind kind, BoolFn canUse, VoidFn onUse);
+void itemDBAdd(ItemDB &db, TileId tileId, const ItemDBEntryName &name, ItemDBEntryKind kind, BoolFn canUse, VoidFn onUse)
 {
-  db.emplace(114, "Health Potion");
-  db.emplace(116, "Mana Potion");
+  auto entry = std::make_tuple(
+      name,
+      kind,
+      canUse,
+      onUse);
+  db.emplace(tileId, std::move(entry));
+}
+
+// convenience functions for working with item database objects
+
+ItemDBEntry &getItemDBEntry(ItemDB &db, TileId tileId);
+ItemDBEntry &getItemDBEntry(ItemDB &db, TileId tileId)
+{
+  if (db.count(tileId))
+  {
+    return db.at(tileId);
+  }
+  throw std::runtime_error("No item database entry for item: " + std::to_string(tileId));
+}
+
+ItemDBEntryName getItemDBEntryName(ItemDBEntry &entry);
+ItemDBEntryName getItemDBEntryName(ItemDBEntry &entry)
+{
+  return std::get<0>(entry);
+}
+
+ItemDBEntryKind getItemDBEntryKind(ItemDBEntry &entry);
+ItemDBEntryKind getItemDBEntryKind(ItemDBEntry &entry)
+{
+  return std::get<1>(entry);
+}
+
+BoolFn &getItemDBEntryCanUse(ItemDBEntry &entry);
+BoolFn &getItemDBEntryCanUse(ItemDBEntry &entry)
+{
+  return std::get<2>(entry);
+}
+
+VoidFn &getItemDBEntryUse(ItemDBEntry &entry);
+VoidFn &getItemDBEntryUse(ItemDBEntry &entry)
+{
+  return std::get<3>(entry);
 }
 
 // convenience functions for working with map item objects
@@ -133,6 +195,8 @@ int main()
   sf::Clock clock;
   sf::Time elapsed;
 
+  ItemDB itemsDatabase;
+
   // HERO VARS
   sf::Sprite sprite;
   std::vector<InventoryItem> heroItems;
@@ -217,8 +281,6 @@ int main()
 
   sf::RectangleShape heroHealthBarShape;
   sf::RectangleShape spiderHealthBarShape;
-
-  std::unordered_map<int, std::string> itemNameDB;
 
   // local lambda functions
 
@@ -333,8 +395,8 @@ int main()
     // because the number keys 1 to 9 are used to trigger the item
     auto slotTriggerText = "[" + std::to_string(slotNumber + 1) + "] ";
 
-    // the item name is found by looking up the item id in the item name database
-    auto itemName = itemNameDB.at(mapItemId);
+    // the item name is found by looking up the item id in the items database
+    auto itemName = getItemDBEntryName(getItemDBEntry(itemsDatabase, mapItemId));
 
     // set the text of the slot
     inventoryText->setString(slotTriggerText + itemName);
@@ -359,6 +421,29 @@ int main()
     setupInventoryItemUI(inventoryItem, heroItems.size());
 
     heroItems.push_back(std::move(inventoryItem));
+  };
+
+  auto isUsedInventoryItem = [](InventoryItem &item)
+  {
+    auto &mapItem = getInventoryItemRef(item);
+    auto state = getMapItemState(*mapItem);
+    return state == USED_INVENTORY_ITEM;
+  };
+
+  auto updateInventoryUI = [&]()
+  {
+    // erase the items which have been used
+    heroItems.erase(
+        std::remove_if(
+            heroItems.begin(),
+            heroItems.end(),
+            isUsedInventoryItem),
+        heroItems.end());
+    // update the remaining items ui
+    for (unsigned long i = 0; i < heroItems.size(); i++)
+    {
+      setupInventoryItemUI(heroItems.at(i), i);
+    }
   };
 
   auto handleHeroAttackAction = [&]()
@@ -659,7 +744,26 @@ int main()
     }
   };
 
-  buildItemNameDatabase(itemNameDB);
+  auto canUseHealthPotion = [&]()
+  {
+    return true;
+  };
+
+  auto useHealthPotion = [&]() {
+
+  };
+
+  auto canUseManaPotion = [&]()
+  {
+    return false;
+  };
+
+  auto useManaPotion = [&]() {
+
+  };
+
+  itemDBAdd(itemsDatabase, 114, "Health Potion", 0, canUseHealthPotion, useHealthPotion);
+  itemDBAdd(itemsDatabase, 116, "Mana Potion", 0, canUseManaPotion, useManaPotion);
 
   setupHero();
   setupEnemy();
