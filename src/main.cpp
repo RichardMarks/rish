@@ -513,7 +513,27 @@ int main()
 
   auto activateInventoryItemSlot = [&](unsigned long slotNumber)
   {
+    if (slotNumber >= heroItems.size())
+    {
+      return;
+    }
     std::cout << "activate inventory item slot number: " << std::to_string(slotNumber) << std::endl;
+    auto &item = heroItems.at(slotNumber);
+    auto &mapItem = getInventoryItemRef(item);
+    auto state = getMapItemState(*mapItem);
+    if (state == INVENTORY_ITEM)
+    {
+      auto tileId = getMapItemId(*mapItem);
+      auto entry = getItemDBEntry(itemsDatabase, tileId);
+      auto canUse = getItemDBEntryCanUse(entry);
+      if (canUse())
+      {
+        auto useItem = getItemDBEntryUse(entry);
+        useItem();
+        setMapItemState(*mapItem, USED_INVENTORY_ITEM);
+        updateInventoryUI();
+      }
+    }
   };
 
   auto handleInventoryHotkeys = [&](sf::Event &event)
@@ -780,13 +800,35 @@ int main()
     }
   };
 
-  auto canUseHealthPotion = [&]()
+  auto applyDamageToHero = [&](float amount)
   {
-    return true;
+    float health = static_cast<float>(heroHealth);
+    heroHealth = static_cast<int>(health - amount);
+    if (heroHealth > heroMaxHealth)
+    {
+      heroHealth = heroMaxHealth;
+    }
+    else if (heroHealth <= 0)
+    {
+      heroHealth = 0;
+      isHeroAlive = false;
+    }
+    float healthFill = 16 * (static_cast<float>(heroHealth) / static_cast<float>(heroMaxHealth));
+    heroHealthBarShape.setSize(sf::Vector2f(healthFill, 2));
   };
 
-  auto useHealthPotion = [&]() {
+  auto canUseHealthPotion = [&]()
+  {
+    bool result = isHeroAlive && heroHealth < heroMaxHealth;
+    std::cout << (result ? "Hero is hurt - can use" : "Hero is fully healed - no use") << std::endl;
+    return result;
+  };
 
+  auto useHealthPotion = [&]()
+  {
+    std::cout << "Used Health Potion" << std::endl;
+    float potionStrength = 0.34f;
+    applyDamageToHero(-(static_cast<float>(heroMaxHealth) * potionStrength));
   };
 
   auto canUseManaPotion = [&]()
