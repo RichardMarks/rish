@@ -168,6 +168,20 @@ int main()
   sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "rish");
   sf::View view(sf::FloatRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT));
 
+  // hotkey mapping vars
+
+  std::unordered_map<sf::Keyboard::Key, unsigned long> inventorySlotKeys;
+
+  inventorySlotKeys.emplace(sf::Keyboard::Num1, 0);
+  inventorySlotKeys.emplace(sf::Keyboard::Num2, 1);
+  inventorySlotKeys.emplace(sf::Keyboard::Num3, 2);
+  inventorySlotKeys.emplace(sf::Keyboard::Num4, 3);
+  inventorySlotKeys.emplace(sf::Keyboard::Num5, 4);
+  inventorySlotKeys.emplace(sf::Keyboard::Num6, 5);
+  inventorySlotKeys.emplace(sf::Keyboard::Num7, 6);
+  inventorySlotKeys.emplace(sf::Keyboard::Num8, 7);
+  inventorySlotKeys.emplace(sf::Keyboard::Num9, 8);
+
   // asset storage variables section
 
   sf::Texture gfxTexture;
@@ -497,8 +511,30 @@ int main()
     }
   };
 
+  auto activateInventoryItemSlot = [&](unsigned long slotNumber)
+  {
+    std::cout << "activate inventory item slot number: " << std::to_string(slotNumber) << std::endl;
+  };
+
+  auto handleInventoryHotkeys = [&](sf::Event &event)
+  {
+    for (auto &hotkey : inventorySlotKeys)
+    {
+      if (event.key.code == hotkey.first)
+      {
+        activateInventoryItemSlot(hotkey.second);
+        return true;
+      }
+    }
+    return false;
+  };
+
   auto handleHeroKeyPressedEvent = [&](sf::Event &event)
   {
+    if (handleInventoryHotkeys(event))
+    {
+      return;
+    }
     if (event.key.code == sf::Keyboard::Space)
     {
       handleHeroAttackAction();
