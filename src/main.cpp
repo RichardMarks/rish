@@ -899,10 +899,9 @@ int main()
   auto spawnRandomItemOnMapAt = [&](int column, int row)
   {
     std::cout << "spawn random item at " << std::to_string(column) << "," << std::to_string(row) << std::endl;
-    int index = rollInt(0, itemsDatabase.size());
+    int index = rollInt(0, itemsDatabase.size() - 1);
     auto it = itemsDatabase.begin();
-    std::advance(it, index);
-    auto tileId = it->first;
+    auto tileId = std::next(it, index)->first;
     addMapItem(tileId, column, row);
   };
 
