@@ -896,6 +896,10 @@ int main()
         checkForHeroVsTreasureChestCollisions(lastColumn, lastRow);
         checkForHeroVsEnemyCollisions(lastColumn, lastRow);
         checkForHeroVsMapItemCollisions();
+        if (isHazardTile)
+        {
+          heroWasDamaged = true;
+        }
       }
     }
   };
