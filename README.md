@@ -37,7 +37,7 @@ A small rogue-like game developed with SFML and C++
 
 - slice 5
 
-  - map should be populated with environmental hazards (traps)
+  - ✅ map should be populated with environmental hazards (traps)
   - hero should take damage on contact with a trap
   - map should have doors eventually leading to new maps
   - hero should be able to press the attack button adjacent to a door to use the door

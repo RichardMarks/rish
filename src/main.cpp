@@ -3,6 +3,7 @@
 #include <vector>
 #include <unordered_map>
 #include <random>
+#include <set>
 #include <SFML/Graphics.hpp>
 
 // constants
@@ -319,11 +320,11 @@ int main()
   int map[] = {
       // map tile ids
       40, 40, 40, 40, 40, 40, 40,
+      40, 48, 48, 48, 48, 41, 40,
       40, 48, 48, 48, 48, 48, 40,
       40, 48, 48, 48, 48, 48, 40,
-      40, 48, 48, 48, 48, 48, 40,
-      40, 48, 48, 48, 48, 48, 40,
-      40, 48, 48, 48, 48, 48, 40,
+      40, 48, 48, 41, 48, 48, 40,
+      40, 48, 41, 48, 48, 48, 40,
       40, 40, 40, 40, 40, 40, 40,
       //
       // BEGIN ITEMS DATA SECTION
@@ -344,6 +345,13 @@ int main()
       CHEST_UNLOCKED_CLOSED, 3, 1, 116, 4,
       //
   };
+
+  std::set<int> walkableTiles;
+  walkableTiles.emplace(48);
+  walkableTiles.emplace(41);
+
+  std::set<int> hazardTiles;
+  hazardTiles.emplace(41);
 
   int mapItemDataIndex = mapWidth * mapHeight;
   std::vector<MapItem> mapItems;
@@ -878,7 +886,9 @@ int main()
     if (didHeroMove)
     {
       int tileId = map[heroX + heroY * mapWidth];
-      if (tileId == 48)
+      bool isWalkableTile = walkableTiles.count(tileId) != 0;
+      bool isHazardTile = hazardTiles.count(tileId) != 0;
+      if (isWalkableTile)
       {
         int lastColumn = heroColumn;
         int lastRow = heroRow;
