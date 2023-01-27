@@ -337,20 +337,11 @@ int main()
       116, 4, 5,
       // BEGIN TREASURE CHESTS DATA SECTION
       // NUM_CHESTS
-      2,
+      3,
       // CHEST_KIND, COLUMN, ROW, OPTIONAL_CONTENTS, OPTIONAL_QTY
-      /*
-        chest kind:
-          0: unlocked - random contents
-            a random item from the items database will be chosen
-          1: locked - random contents
-            chest will need to be unlocked (future feature)
-          2: unlocked - specific contents
-            give item id as contents
-          specify 0 as quantity to have a 10% chance of two items
-      */
-      0, 1, 3, 0, 0,
-      2, 3, 1, 116, 4,
+      CHEST_UNLOCKED_CLOSED, 1, 3, 0, 0,
+      CHEST_UNLOCKED_CLOSED, 1, 5, 0, 0,
+      CHEST_UNLOCKED_CLOSED, 3, 1, 116, 4,
       //
   };
 
@@ -643,6 +634,47 @@ int main()
     }
   };
 
+  auto handleHeroInteractAction = [&]()
+  {
+    for (auto &chest : treasureChests)
+    {
+      auto kind = getTreasureChestKind(chest);
+
+      // skip the chests that are already open
+      if (kind == CHEST_UNLOCKED_OPEN)
+      {
+        continue;
+      }
+      else if (kind == CHEST_LOCKED_CLOSED)
+      {
+        // TODO: locked chests require a key to open
+        continue;
+      }
+
+      auto &coords = getTreasureChestCoordinates(chest);
+      auto chestColumn = coords.first;
+      auto chestRow = coords.second;
+
+      bool hitAbove = heroRow - 1 == chestRow && heroColumn == chestColumn;
+      bool hitBelow = heroRow + 1 == chestRow && heroColumn == chestColumn;
+      bool hitLeft = heroRow == chestRow && heroColumn - 1 == chestColumn;
+      bool hitRight = heroRow == chestRow && heroColumn + 1 == chestColumn;
+      bool hitChest = hitAbove || hitBelow || hitLeft || hitRight;
+
+      if (!hitChest)
+      {
+        continue;
+      }
+
+      setTreasureChestKind(chest, CHEST_UNLOCKED_OPEN);
+      setTreasureChestSprite(chest);
+      // TODO: handle what happens when the chest opens
+      return true;
+    }
+
+    return false;
+  };
+
   auto checkForHeroVsMapItemCollisions = [&]()
   {
     for (auto &item : mapItems)
@@ -740,7 +772,10 @@ int main()
     }
     if (event.key.code == sf::Keyboard::Space)
     {
-      handleHeroAttackAction();
+      if (!handleHeroInteractAction())
+      {
+        handleHeroAttackAction();
+      }
     }
     bool didHeroMove = false;
     int heroX = heroColumn;
