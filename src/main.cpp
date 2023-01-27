@@ -762,6 +762,11 @@ int main()
 
   auto checkForHeroVsEnemyCollisions = [&](int lastColumn, int lastRow)
   {
+    // colliding with dead invisible spiders is bad mmkay
+    if (!isSpiderAlive)
+    {
+      return;
+    }
     if (heroColumn == spiderColumn && heroRow == spiderRow)
     {
       heroWasDamaged = true;
