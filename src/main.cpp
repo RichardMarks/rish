@@ -20,6 +20,13 @@ constexpr int FIELD_ITEM = 1;
 constexpr int INVENTORY_ITEM = 2;
 constexpr int USED_INVENTORY_ITEM = 3;
 
+constexpr int ITEM_DATA_STRIDE = 3;
+constexpr int TREASURE_CHEST_DATA_STRIDE = 5;
+
+constexpr int CHEST_UNLOCKED_CLOSED = 0;
+constexpr int CHEST_UNLOCKED_OPEN = 1;
+constexpr int CHEST_LOCKED_CLOSED = 2;
+
 // typedefs
 
 typedef std::function<bool()> BoolFn;
@@ -30,6 +37,14 @@ typedef int MapItemId;
 typedef std::unique_ptr<sf::Sprite> MapItemSprite;
 typedef std::pair<int, int> MapItemCoordinate;
 typedef std::tuple<MapItemState, MapItemSprite, MapItemId, MapItemCoordinate> MapItem;
+
+typedef int TreasureChestKind;
+typedef std::unique_ptr<sf::Sprite> TreasureChestSprite;
+typedef std::pair<int, int> TreasureChestCoordinate;
+typedef int TreasureChestContentItemId;
+typedef int TreasureChestContentItemQuantity;
+typedef std::pair<TreasureChestContentItemId, TreasureChestContentItemQuantity> TreasureChestContents;
+typedef std::tuple<TreasureChestKind, TreasureChestCoordinate, TreasureChestContents, TreasureChestSprite> TreasureChest;
 
 typedef std::shared_ptr<MapItem> InventoryItemRef;
 typedef std::unique_ptr<sf::Sprite> InventoryItemUISprite;
@@ -140,6 +155,56 @@ const MapItemCoordinate &getMapItemCoordinates(const MapItem &item)
   const MapItemCoordinate &mapItemCoordinates = std::get<3>(item);
   return mapItemCoordinates;
 };
+
+// convenience functions for working with treasure chest objects
+
+void setTreasureChestKind(TreasureChest &chest, TreasureChestKind chestKind);
+void setTreasureChestKind(TreasureChest &chest, TreasureChestKind chestKind)
+{
+  std::get<0>(chest) = chestKind;
+}
+
+TreasureChestKind getTreasureChestKind(const TreasureChest &chest);
+TreasureChestKind getTreasureChestKind(const TreasureChest &chest)
+{
+  int chestKind = std::get<0>(chest);
+  return chestKind;
+}
+
+const TreasureChestCoordinate &getTreasureChestCoordinates(const TreasureChest &chest);
+const TreasureChestCoordinate &getTreasureChestCoordinates(const TreasureChest &chest)
+{
+  const TreasureChestCoordinate &chestCoordinates = std::get<1>(chest);
+  return chestCoordinates;
+}
+
+const TreasureChestContents &getTreasureChestContents(const TreasureChest &chest);
+const TreasureChestContents &getTreasureChestContents(const TreasureChest &chest)
+{
+  const TreasureChestContents &chestContents = std::get<2>(chest);
+  return chestContents;
+}
+
+TreasureChestContentItemId getTreasureChestContentsItemId(const TreasureChest &chest);
+TreasureChestContentItemId getTreasureChestContentsItemId(const TreasureChest &chest)
+{
+  const TreasureChestContents &chestContents = std::get<2>(chest);
+  return chestContents.first;
+}
+
+TreasureChestContentItemQuantity getTreasureChestContentsItemQuantity(const TreasureChest &chest);
+TreasureChestContentItemQuantity getTreasureChestContentsItemQuantity(const TreasureChest &chest)
+{
+  const TreasureChestContents &chestContents = std::get<2>(chest);
+  return chestContents.second;
+}
+
+const TreasureChestSprite &getTreasureChestSprite(const TreasureChest &chest);
+const TreasureChestSprite &getTreasureChestSprite(const TreasureChest &chest)
+{
+  const TreasureChestSprite &chestSprite = std::get<3>(chest);
+  return chestSprite;
+}
 
 // convenience functions for working with map item objects
 
@@ -270,12 +335,35 @@ int main()
       114, 2, 2,
       114, 4, 3,
       116, 4, 5,
+      // BEGIN TREASURE CHESTS DATA SECTION
+      // NUM_CHESTS
+      2,
+      // CHEST_KIND, COLUMN, ROW, OPTIONAL_CONTENTS, OPTIONAL_QTY
+      /*
+        chest kind:
+          0: unlocked - random contents
+            a random item from the items database will be chosen
+          1: locked - random contents
+            chest will need to be unlocked (future feature)
+          2: unlocked - specific contents
+            give item id as contents
+          specify 0 as quantity to have a 10% chance of two items
+      */
+      0, 1, 3, 0, 0,
+      2, 3, 1, 116, 4,
       //
   };
 
   int mapItemDataIndex = mapWidth * mapHeight;
   std::vector<MapItem> mapItems;
   int numMapItems = map[mapItemDataIndex];
+
+  int treasureChestDataIndex = mapItemDataIndex + 1;
+  treasureChestDataIndex += (ITEM_DATA_STRIDE * numMapItems);
+  int numTreasureChests = map[treasureChestDataIndex];
+  treasureChestDataIndex += 1;
+
+  std::vector<TreasureChest> treasureChests;
 
   // ENEMY VARS
   sf::Sprite enemy;
@@ -363,6 +451,51 @@ int main()
     mapItems.push_back(std::move(item));
   };
 
+  auto setTreasureChestSprite = [&](TreasureChest &chest)
+  {
+    auto &spr = getTreasureChestSprite(chest);
+    auto chestKind = getTreasureChestKind(chest);
+
+    constexpr int CLOSED_CHEST_ID = 89;
+    constexpr int OPEN_CHEST_ID = 91;
+
+    int id = 0;
+    if (chestKind == CHEST_UNLOCKED_CLOSED || chestKind == CHEST_LOCKED_CLOSED)
+    {
+      id = CLOSED_CHEST_ID;
+    }
+    else if (chestKind == CHEST_UNLOCKED_OPEN)
+    {
+      id = OPEN_CHEST_ID;
+    }
+
+    int srcX = id % numTilesAcrossTexture;
+    int srcY = id / numTilesAcrossTexture;
+    spr->setTextureRect(sf::IntRect(srcX * TILE_WIDTH, srcY * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT));
+  };
+
+  auto addMapTreasureChest = [&](
+                                 int chestKind,
+                                 int chestColumn,
+                                 int chestRow,
+                                 int chestContent,
+                                 int chestQty)
+  {
+    TreasureChest chest = std::make_tuple(
+        chestKind,
+        std::make_pair(chestColumn, chestRow),
+        std::make_pair(chestContent, chestQty),
+        std::make_unique<sf::Sprite>());
+
+    auto &spr = getTreasureChestSprite(chest);
+
+    spr->setTexture(gfxTexture);
+    setTreasureChestSprite(chest);
+    spr->setPosition(sf::Vector2f(chestColumn * TILE_WIDTH, chestRow * TILE_HEIGHT));
+
+    treasureChests.push_back(std::move(chest));
+  };
+
   auto setupTilemap = [&]()
   {
     mapVerts.setPrimitiveType(sf::PrimitiveType::Quads);
@@ -392,6 +525,18 @@ int main()
       int itemColumn = map[mapItemDataIndex + 1 + (i * 3) + 1];
       int itemRow = map[mapItemDataIndex + 1 + (i * 3) + 2];
       addMapItem(itemId, itemColumn, itemRow);
+    }
+
+    for (int i = 0; i < numTreasureChests; i++)
+    {
+      int base = treasureChestDataIndex + (i * TREASURE_CHEST_DATA_STRIDE);
+      int chestKind = map[base + 0];
+      int chestColumn = map[base + 1];
+      int chestRow = map[base + 2];
+      int chestContent = map[base + 3];
+      int chestQty = map[base + 4];
+
+      addMapTreasureChest(chestKind, chestColumn, chestRow, chestContent, chestQty);
     }
   };
 
@@ -784,6 +929,17 @@ int main()
     window.draw(mapVerts, &gfxTexture);
   };
 
+  // render the treasure chests
+
+  auto renderTreasureChests = [&]()
+  {
+    for (auto &chest : treasureChests)
+    {
+      auto &spr = getTreasureChestSprite(chest);
+      window.draw(*(spr.get()));
+    }
+  };
+
   // render the map items
 
   auto renderMapItems = [&]()
@@ -901,6 +1057,7 @@ int main()
     // rendering starts here
     prepareRender();
     renderTilemap();
+    renderTreasureChests();
     renderMapItems();
     renderEnemy();
     renderHero();

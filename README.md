@@ -29,7 +29,7 @@ A small rogue-like game developed with SFML and C++
 
   - ✅ hero should be able to use the health potion from inventory to restore health
   - ✅ enemy should drop an item on the map when killed
-  - map should be populated with static treasure chests
+  - ✅ map should be populated with static treasure chests
   - hero should not be able to move into the space a treasure chest occupies
   - hero should open treasure chests by pressing the attack button when adjacent to the chest
   - item within treasure chest should be added to hero inventory when chest is opened
