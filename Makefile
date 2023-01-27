@@ -28,7 +28,7 @@ SFML_LDFLAGS=$(shell pkg-config sfml-graphics sfml-window sfml-system sfml-audio
 GAME_SOURCES=$(shell find $(SOURCE_ROOT_DIR) -name "*.cpp")
 GAME_OBJECTS=$(patsubst $(SOURCE_ROOT_DIR)/%.cpp,$(OBJECT_ROOT_DIR)/%.o,$(GAME_SOURCES))
 
-CFLAGS=-DSTATIC_SFML $(SFML_CFLAGS) $(addprefix -I,$(wildcard $(SOURCE_ROOT_DIR)/**)) -Wall -Wextra -Wpedantic -std=c++17 -O3
+CFLAGS=-DSTATIC_SFML $(SFML_CFLAGS) $(addprefix -I,$(wildcard $(SOURCE_ROOT_DIR)/**)) -Wall -Wextra -Wpedantic -std=c++17 -O3 -g
 LDFLAGS=$(SFML_LDFLAGS)
 
 # phony targets
