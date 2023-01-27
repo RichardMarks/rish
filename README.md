@@ -32,7 +32,7 @@ A small rogue-like game developed with SFML and C++
   - ✅ map should be populated with static treasure chests
   - ✅ hero should not be able to move into the space a treasure chest occupies
   - ✅ hero should open treasure chests by pressing the attack button when adjacent to the chest
-  - item within treasure chest should be added to hero inventory when chest is opened
+  - ✅ item within treasure chest should be added to hero inventory when chest is opened
   - ✅ open treasure chests should be displayed as opened
 
 - slice 5

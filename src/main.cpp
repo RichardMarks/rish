@@ -598,6 +598,31 @@ int main()
     heroItems.push_back(std::move(inventoryItem));
   };
 
+  auto addItemToInventory = [&](TileId tileId)
+  {
+    InventoryItem inventoryItem = std::make_tuple(
+        std::make_shared<MapItem>(),
+        // std::shared_ptr<MapItem>(itemCollected, [](MapItem *) {}),
+        std::make_unique<sf::Sprite>(),
+        std::make_unique<sf::Text>());
+    InventoryItemRef &mapItem = std::get<0>(inventoryItem);
+    std::get<0>(*mapItem) = INVENTORY_ITEM;
+    std::get<1>(*mapItem) = std::make_unique<sf::Sprite>();
+    std::get<2>(*mapItem) = tileId;
+    std::get<3>(*mapItem) = std::make_pair(-1, -1);
+
+    auto &spr = getMapItemSprite(*mapItem);
+
+    spr->setTexture(gfxTexture);
+    int srcX = tileId % numTilesAcrossTexture;
+    int srcY = tileId / numTilesAcrossTexture;
+    spr->setTextureRect(sf::IntRect(srcX * TILE_WIDTH, srcY * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT));
+    spr->setPosition(sf::Vector2f(-9999.0f, -9999.0f));
+
+    setupInventoryItemUI(inventoryItem, heroItems.size());
+    heroItems.push_back(std::move(inventoryItem));
+  };
+
   auto isUsedInventoryItem = [](InventoryItem &item)
   {
     auto &mapItem = getInventoryItemRef(item);
@@ -668,7 +693,38 @@ int main()
 
       setTreasureChestKind(chest, CHEST_UNLOCKED_OPEN);
       setTreasureChestSprite(chest);
-      // TODO: handle what happens when the chest opens
+
+      int contentId = getTreasureChestContentsItemId(chest);
+      // if chest content is 0, use a random item
+      if (contentId == 0)
+      {
+        int index = rollInt(0, itemsDatabase.size() - 1);
+        contentId = std::next(itemsDatabase.begin(), index)->first;
+      }
+      auto quantity = getTreasureChestContentsItemQuantity(chest);
+      // if chest quantity is zero, chance for a second item
+      bool chanceForSecondItem = quantity == 0;
+
+      // award the hero with the item qtx times
+      if (quantity == 0)
+      {
+        quantity = 1;
+      }
+
+      for (int i = 0; i < quantity; i++)
+      {
+        addItemToInventory(contentId);
+      }
+
+      if (chanceForSecondItem)
+      {
+        if (chanceOf(10.0f))
+        {
+          // award the hero with another item
+          addItemToInventory(contentId);
+        }
+      }
+
       return true;
     }
 
