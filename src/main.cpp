@@ -2,6 +2,7 @@
 #include <tuple>
 #include <vector>
 #include <unordered_map>
+#include <random>
 #include <SFML/Graphics.hpp>
 
 // constants
@@ -168,6 +169,26 @@ int main()
   sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "rish");
   sf::View view(sf::FloatRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT));
 
+  // random number generation
+
+  std::seed_seq seed{
+      std::random_device{}(),
+      static_cast<unsigned int>(::time(nullptr)),
+      static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count())};
+  std::mt19937 rng(seed);
+
+  auto rollInt = [&rng](int low, int high)
+  {
+    std::uniform_int_distribution<int> dist(low, high);
+    return dist(rng);
+  };
+
+  auto chanceOf = [&rng](float percentage)
+  {
+    std::uniform_real_distribution<float> dist(1.0f, 100.0f);
+    return dist(rng) < percentage;
+  };
+
   // hotkey mapping vars
 
   std::unordered_map<sf::Keyboard::Key, unsigned long> inventorySlotKeys;
@@ -322,6 +343,26 @@ int main()
     spiderHealthBarShape.setPosition(enemy.getPosition() + sf::Vector2f(0, 1 + TILE_HEIGHT));
   };
 
+  auto addMapItem = [&](TileId itemId, int itemColumn, int itemRow)
+  {
+    MapItem item = std::make_tuple(
+        FIELD_ITEM,
+        std::make_unique<sf::Sprite>(),
+        itemId,
+        std::make_pair(itemColumn, itemRow));
+
+    auto &spr = getMapItemSprite(item);
+    auto id = getMapItemId(item);
+    auto &coord = getMapItemCoordinates(item);
+
+    spr->setTexture(gfxTexture);
+    int srcX = id % numTilesAcrossTexture;
+    int srcY = id / numTilesAcrossTexture;
+    spr->setTextureRect(sf::IntRect(srcX * TILE_WIDTH, srcY * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT));
+    spr->setPosition(sf::Vector2f(coord.first * TILE_WIDTH, coord.second * TILE_HEIGHT));
+    mapItems.push_back(std::move(item));
+  };
+
   auto setupTilemap = [&]()
   {
     mapVerts.setPrimitiveType(sf::PrimitiveType::Quads);
@@ -350,23 +391,7 @@ int main()
       int itemId = map[mapItemDataIndex + 1 + i * 3];
       int itemColumn = map[mapItemDataIndex + 1 + (i * 3) + 1];
       int itemRow = map[mapItemDataIndex + 1 + (i * 3) + 2];
-
-      MapItem item = std::make_tuple(
-          FIELD_ITEM,
-          std::make_unique<sf::Sprite>(),
-          itemId,
-          std::make_pair(itemColumn, itemRow));
-
-      auto &spr = getMapItemSprite(item);
-      auto id = getMapItemId(item);
-      auto &coord = getMapItemCoordinates(item);
-
-      spr->setTexture(gfxTexture);
-      int srcX = id % numTilesAcrossTexture;
-      int srcY = id / numTilesAcrossTexture;
-      spr->setTextureRect(sf::IntRect(srcX * TILE_WIDTH, srcY * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT));
-      spr->setPosition(sf::Vector2f(coord.first * TILE_WIDTH, coord.second * TILE_HEIGHT));
-      mapItems.push_back(std::move(item));
+      addMapItem(itemId, itemColumn, itemRow);
     }
   };
 
@@ -677,6 +702,16 @@ int main()
     }
   };
 
+  auto spawnRandomItemOnMapAt = [&](int column, int row)
+  {
+    std::cout << "spawn random item at " << std::to_string(column) << "," << std::to_string(row) << std::endl;
+    int index = rollInt(0, itemsDatabase.size());
+    auto it = itemsDatabase.begin();
+    std::advance(it, index);
+    auto tileId = it->first;
+    addMapItem(tileId, column, row);
+  };
+
   auto handleSpiderWasDamagedEvent = [&]()
   {
     if (spiderWasDamaged)
@@ -693,6 +728,10 @@ int main()
       {
         spiderHealth = 0;
         isSpiderAlive = false;
+        if (chanceOf(47.0f))
+        {
+          spawnRandomItemOnMapAt(spiderColumn, spiderRow);
+        }
       }
     }
   };
