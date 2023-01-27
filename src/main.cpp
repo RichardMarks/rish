@@ -681,6 +681,19 @@ int main()
     }
   };
 
+  auto checkForHeroVsTreasureChestCollisions = [&](int lastColumn, int lastRow)
+  {
+    for (auto &chest : treasureChests)
+    {
+      auto &coords = getTreasureChestCoordinates(chest);
+      if (heroColumn == coords.first && heroRow == coords.second)
+      {
+        setHeroPosition(lastColumn, lastRow);
+        return;
+      }
+    }
+  };
+
   auto activateInventoryItemSlot = [&](unsigned long slotNumber)
   {
     if (slotNumber >= heroItems.size())
@@ -774,6 +787,7 @@ int main()
         int lastColumn = heroColumn;
         int lastRow = heroRow;
         setHeroPosition(heroX, heroY);
+        checkForHeroVsTreasureChestCollisions(lastColumn, lastRow);
         checkForHeroVsEnemyCollisions(lastColumn, lastRow);
         checkForHeroVsMapItemCollisions();
       }
