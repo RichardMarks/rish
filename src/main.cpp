@@ -28,6 +28,9 @@ constexpr int CHEST_UNLOCKED_CLOSED = 0;
 constexpr int CHEST_UNLOCKED_OPEN = 1;
 constexpr int CHEST_LOCKED_CLOSED = 2;
 
+constexpr int CLOSED_DOOR_TILE_ID = 45;
+constexpr int OPENED_DOOR_TILE_ID = 21;
+
 // typedefs
 
 typedef std::function<bool()> BoolFn;
@@ -349,6 +352,7 @@ int main()
   std::set<int> walkableTiles;
   walkableTiles.emplace(48);
   walkableTiles.emplace(41);
+  walkableTiles.emplace(OPENED_DOOR_TILE_ID);
 
   std::set<int> hazardTiles;
   hazardTiles.emplace(41);
@@ -495,6 +499,30 @@ int main()
     treasureChests.push_back(std::move(chest));
   };
 
+  auto setTilemapTileVertices = [&](int mapIndex)
+  {
+    int x = mapIndex % mapWidth;
+    int y = mapIndex / mapWidth;
+    int tileId = map[mapIndex];
+    int tileU = tileId % numTilesAcrossTexture;
+    int tileV = tileId / numTilesAcrossTexture;
+    sf::Vertex *quad = &mapVerts[4 * mapIndex];
+    quad[0].position = sf::Vector2f(x * TILE_WIDTH, y * TILE_HEIGHT);
+    quad[1].position = sf::Vector2f((x + 1) * TILE_WIDTH, y * TILE_HEIGHT);
+    quad[2].position = sf::Vector2f((x + 1) * TILE_WIDTH, (y + 1) * TILE_HEIGHT);
+    quad[3].position = sf::Vector2f(x * TILE_WIDTH, (y + 1) * TILE_HEIGHT);
+    quad[0].texCoords = sf::Vector2f(tileU * TILE_WIDTH, tileV * TILE_HEIGHT);
+    quad[1].texCoords = sf::Vector2f((tileU + 1) * TILE_WIDTH, tileV * TILE_HEIGHT);
+    quad[2].texCoords = sf::Vector2f((tileU + 1) * TILE_WIDTH, (tileV + 1) * TILE_HEIGHT);
+    quad[3].texCoords = sf::Vector2f(tileU * TILE_WIDTH, (tileV + 1) * TILE_HEIGHT);
+  };
+
+  auto changeTilemapTile = [&](int mapIndex, TileId tileId)
+  {
+    map[mapIndex] = tileId;
+    setTilemapTileVertices(mapIndex);
+  };
+
   auto setupTilemap = [&]()
   {
     mapVerts.setPrimitiveType(sf::PrimitiveType::Quads);
@@ -502,20 +530,7 @@ int main()
 
     for (int i = 0; i < mapWidth * mapHeight; i++)
     {
-      int x = i % mapWidth;
-      int y = i / mapWidth;
-      int tileId = map[i];
-      int tileU = tileId % numTilesAcrossTexture;
-      int tileV = tileId / numTilesAcrossTexture;
-      sf::Vertex *quad = &mapVerts[4 * (x + y * mapWidth)];
-      quad[0].position = sf::Vector2f(x * TILE_WIDTH, y * TILE_HEIGHT);
-      quad[1].position = sf::Vector2f((x + 1) * TILE_WIDTH, y * TILE_HEIGHT);
-      quad[2].position = sf::Vector2f((x + 1) * TILE_WIDTH, (y + 1) * TILE_HEIGHT);
-      quad[3].position = sf::Vector2f(x * TILE_WIDTH, (y + 1) * TILE_HEIGHT);
-      quad[0].texCoords = sf::Vector2f(tileU * TILE_WIDTH, tileV * TILE_HEIGHT);
-      quad[1].texCoords = sf::Vector2f((tileU + 1) * TILE_WIDTH, tileV * TILE_HEIGHT);
-      quad[2].texCoords = sf::Vector2f((tileU + 1) * TILE_WIDTH, (tileV + 1) * TILE_HEIGHT);
-      quad[3].texCoords = sf::Vector2f(tileU * TILE_WIDTH, (tileV + 1) * TILE_HEIGHT);
+      setTilemapTileVertices(i);
     }
 
     for (int i = 0; i < numMapItems; i++)
@@ -667,7 +682,7 @@ int main()
     }
   };
 
-  auto handleHeroInteractAction = [&]()
+  auto handleOpenTreasureChestAction = [&]()
   {
     for (auto &chest : treasureChests)
     {
@@ -736,6 +751,89 @@ int main()
       return true;
     }
 
+    return false;
+  };
+
+  auto handleOpenDoorAction = [&]()
+  {
+    std::vector<std::pair<TileId, int>> neighboringTileIds;
+
+    // if there is a tile above the hero, add to list of neighboring tile ids
+    if (heroRow - 1 >= 0)
+    {
+      auto x = heroColumn;
+      auto y = heroRow - 1;
+      int index = x + (y * mapWidth);
+      auto tileId = map[index];
+      neighboringTileIds.push_back(std::make_pair(tileId, index));
+    }
+
+    // if there is a tile below the hero, add to the list of neighboring tile ids
+    if (heroRow + 1 < mapHeight)
+    {
+      auto x = heroColumn;
+      auto y = heroRow + 1;
+      int index = x + (y * mapWidth);
+      auto tileId = map[index];
+      neighboringTileIds.push_back(std::make_pair(tileId, index));
+    }
+
+    // if there is a tile to the left of the hero, add to the list of neighboring tile ids
+    if (heroColumn - 1 >= 0)
+    {
+      auto x = heroColumn - 1;
+      auto y = heroRow;
+      int index = x + (y * mapWidth);
+      auto tileId = map[index];
+      neighboringTileIds.push_back(std::make_pair(tileId, index));
+    }
+
+    // if there is a tile to the right of the hero, add to the list of neighboring tile ids
+    if (heroColumn + 1 < mapWidth)
+    {
+      auto x = heroColumn + 1;
+      auto y = heroRow;
+      int index = x + (y * mapWidth);
+      auto tileId = map[index];
+      neighboringTileIds.push_back(std::make_pair(tileId, index));
+    }
+
+    for (auto tileInfo : neighboringTileIds)
+    {
+      auto [tileId, tileIndex] = tileInfo;
+      bool isDoorTile = tileId == CLOSED_DOOR_TILE_ID || tileId == OPENED_DOOR_TILE_ID;
+      if (!isDoorTile)
+      {
+        continue;
+      }
+      if (tileId == CLOSED_DOOR_TILE_ID)
+      {
+        changeTilemapTile(tileIndex, OPENED_DOOR_TILE_ID);
+      }
+      else
+      {
+        changeTilemapTile(tileIndex, CLOSED_DOOR_TILE_ID);
+      }
+      return true;
+    }
+
+    return false;
+  };
+
+  auto handleHeroInteractAction = [&]()
+  {
+    // if we opened a treasure chest, the interaction was successful
+    if (handleOpenTreasureChestAction())
+    {
+      return true;
+    }
+    // if we opened a door, the interaction was successful
+    if (handleOpenDoorAction())
+    {
+      return true;
+    }
+
+    // nothing to interact with, interaction was not successful
     return false;
   };
 
