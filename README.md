@@ -41,6 +41,12 @@ A small rogue-like game developed with SFML and C++
   - ✅ hero should take damage on contact with a trap
   - ✅ map should have doors eventually leading to new maps
   - ✅ hero should be able to press the attack button adjacent to a door to use the door
+  - ✅ refactor runtime into a Game class
+  - refactor common variables into a GameContext class
+  - refactor hero code into a Hero class
+  - refactor enemy code into an Enemy class
+  - refactor map code into a Level class
+  - implement a second level map
   - hero should be able to navigate between two maps using a door
 
 - slice 6
