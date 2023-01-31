@@ -1,109 +1,11 @@
 #ifndef RISH_GAME_H
 #define RISH_GAME_H
-#include <iostream>
-#include <tuple>
-#include <vector>
-#include <unordered_map>
-#include <random>
-#include <set>
-#include <SFML/Graphics.hpp>
 
-// constants
-
-constexpr int WINDOW_WIDTH = 1920;
-constexpr int WINDOW_HEIGHT = 1440;
-
-constexpr int SCREEN_WIDTH = 320;
-constexpr int SCREEN_HEIGHT = 240;
-
-constexpr int TILE_WIDTH = 16;
-constexpr int TILE_HEIGHT = 16;
-
-constexpr int FIELD_ITEM = 1;
-constexpr int INVENTORY_ITEM = 2;
-constexpr int USED_INVENTORY_ITEM = 3;
-
-constexpr int ITEM_DATA_STRIDE = 3;
-constexpr int TREASURE_CHEST_DATA_STRIDE = 5;
-
-constexpr int CHEST_UNLOCKED_CLOSED = 0;
-constexpr int CHEST_UNLOCKED_OPEN = 1;
-constexpr int CHEST_LOCKED_CLOSED = 2;
-
-constexpr int CLOSED_DOOR_TILE_ID = 45;
-constexpr int OPENED_DOOR_TILE_ID = 21;
-
-extern int mapWidth;
-extern int mapHeight;
-extern int map[];
+#include "constants.h"
+#include "types.h"
+#include "Level.h"
 
 // typedefs
-
-typedef std::function<bool()> BoolFn;
-typedef std::function<void()> VoidFn;
-
-typedef int MapItemState;
-typedef int MapItemId;
-typedef std::unique_ptr<sf::Sprite> MapItemSprite;
-typedef std::pair<int, int> MapItemCoordinate;
-typedef std::tuple<MapItemState, MapItemSprite, MapItemId, MapItemCoordinate> MapItem;
-
-typedef int TreasureChestKind;
-typedef std::unique_ptr<sf::Sprite> TreasureChestSprite;
-typedef std::pair<int, int> TreasureChestCoordinate;
-typedef int TreasureChestContentItemId;
-typedef int TreasureChestContentItemQuantity;
-typedef std::pair<TreasureChestContentItemId, TreasureChestContentItemQuantity> TreasureChestContents;
-typedef std::tuple<TreasureChestKind, TreasureChestCoordinate, TreasureChestContents, TreasureChestSprite> TreasureChest;
-
-typedef std::shared_ptr<MapItem> InventoryItemRef;
-typedef std::unique_ptr<sf::Sprite> InventoryItemUISprite;
-typedef std::unique_ptr<sf::Text> InventoryItemUIText;
-typedef std::tuple<InventoryItemRef, InventoryItemUISprite, InventoryItemUIText> InventoryItem;
-
-typedef int TileId;
-
-/*
-
-Item
-
-  map: {
-    [TileId]: (
-      Name,
-      Kind,
-      CanUse,
-      Use,
-    )
-  }
-
-*/
-
-typedef std::string ItemDBEntryName;
-typedef int ItemDBEntryKind;
-typedef std::tuple<ItemDBEntryName, ItemDBEntryKind, BoolFn, VoidFn> ItemDBEntry;
-typedef std::unordered_map<TileId, ItemDBEntry> ItemDB;
-
-extern void itemDBAdd(ItemDB &db, TileId tileId, const ItemDBEntryName &name, ItemDBEntryKind kind, BoolFn canUse, VoidFn onUse);
-extern ItemDBEntry &getItemDBEntry(ItemDB &db, TileId tileId);
-extern ItemDBEntryName getItemDBEntryName(ItemDBEntry &entry);
-extern ItemDBEntryKind getItemDBEntryKind(ItemDBEntry &entry);
-extern BoolFn &getItemDBEntryCanUse(ItemDBEntry &entry);
-extern VoidFn &getItemDBEntryUse(ItemDBEntry &entry);
-extern MapItemState getMapItemState(const MapItem &item);
-extern void setMapItemState(MapItem &item, int mapItemState);
-extern const MapItemSprite &getMapItemSprite(const MapItem &item);
-extern MapItemId getMapItemId(const MapItem &item);
-extern const MapItemCoordinate &getMapItemCoordinates(const MapItem &item);
-extern void setTreasureChestKind(TreasureChest &chest, TreasureChestKind chestKind);
-extern TreasureChestKind getTreasureChestKind(const TreasureChest &chest);
-extern const TreasureChestCoordinate &getTreasureChestCoordinates(const TreasureChest &chest);
-extern const TreasureChestContents &getTreasureChestContents(const TreasureChest &chest);
-extern TreasureChestContentItemId getTreasureChestContentsItemId(const TreasureChest &chest);
-extern TreasureChestContentItemQuantity getTreasureChestContentsItemQuantity(const TreasureChest &chest);
-extern const TreasureChestSprite &getTreasureChestSprite(const TreasureChest &chest);
-extern const InventoryItemRef &getInventoryItemRef(const InventoryItem &item);
-extern const InventoryItemUISprite &getInventoryItemUISprite(const InventoryItem &item);
-extern const InventoryItemUIText &getInventoryItemUIText(const InventoryItem &item);
 
 namespace rish
 {
@@ -138,15 +40,13 @@ namespace rish
     bool heroWasDamaged = false;
 
     // MAP VARS
-    sf::VertexArray mapVerts;
-    std::set<int> walkableTiles;
-    std::set<int> hazardTiles;
+
+    Level level;
     std::vector<MapItem> mapItems;
     std::vector<TreasureChest> treasureChests;
-    int mapItemDataIndex;
-    int numMapItems;
-    int treasureChestDataIndex;
-    int numTreasureChests;
+
+    std::set<int> walkableTiles;
+    std::set<int> hazardTiles;
 
     // ENEMY VARS
     sf::Sprite enemy;
@@ -223,6 +123,8 @@ namespace rish
     void useHealthPotion();
     bool canUseManaPotion();
     void useManaPotion();
+
+    void setSpriteTile(sf::Sprite &sprite, TileId tileId, sf::Texture &tilesheetTexture);
   };
 }
 

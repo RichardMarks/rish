@@ -1,9 +1,12 @@
 #include "Game.h"
 
-int mapWidth = 7;
-int mapHeight = 7;
+#include "helpers.h"
 
-int map[] = {
+using namespace rish;
+
+int firstMap[] = {
+    // map dimension
+    7, 7,
     // map tile ids
     40, 40, 45, 40, 40, 40, 40,
     40, 48, 48, 48, 48, 41, 40,
@@ -32,14 +35,14 @@ int map[] = {
     //
 };
 
-rish::Game::Game() : window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "rish"),
-                     view(sf::FloatRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT))
+Game::Game() : window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "rish"),
+               view(sf::FloatRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT))
 {
   setup();
   run();
 }
 
-void rish::Game::setup()
+void Game::setup()
 {
   if (!gfxTexture.loadFromFile("assets/gfx.png"))
   {
@@ -77,35 +80,28 @@ void rish::Game::setup()
 
   numTilesAcrossTexture = gfxTexture.getSize().x / TILE_WIDTH;
 
-  mapItemDataIndex = mapWidth * mapHeight;
-  numMapItems = map[mapItemDataIndex];
-  treasureChestDataIndex = mapItemDataIndex + 1;
-  treasureChestDataIndex += (ITEM_DATA_STRIDE * numMapItems);
-  numTreasureChests = map[treasureChestDataIndex];
-  treasureChestDataIndex += 1;
-
   itemDBAdd(
       itemsDatabase,
       114,
       "Health Potion",
       0,
-      std::bind(&rish::Game::canUseHealthPotion, this),
-      std::bind(&rish::Game::useHealthPotion, this));
+      std::bind(&Game::canUseHealthPotion, this),
+      std::bind(&Game::useHealthPotion, this));
 
   itemDBAdd(
       itemsDatabase,
       116,
       "Mana Potion",
       0,
-      std::bind(&rish::Game::canUseManaPotion, this),
-      std::bind(&rish::Game::useManaPotion, this));
+      std::bind(&Game::canUseManaPotion, this),
+      std::bind(&Game::useManaPotion, this));
 
   setupHero();
   setupEnemy();
   setupTilemap();
 }
 
-void rish::Game::run()
+void Game::run()
 {
   while (window.isOpen())
   {
@@ -129,19 +125,19 @@ void rish::Game::run()
   }
 }
 
-int rish::Game::rollInt(int low, int high)
+int Game::rollInt(int low, int high)
 {
   std::uniform_int_distribution<int> dist(low, high);
   return dist(rng);
 }
 
-bool rish::Game::chanceOf(float percentage)
+bool Game::chanceOf(float percentage)
 {
   std::uniform_real_distribution<float> dist(1.0f, 100.0f);
   return dist(rng) < percentage;
 }
 
-void rish::Game::setupHero()
+void Game::setupHero()
 {
   sprite.setTexture(gfxTexture);
   sprite.setTextureRect(sf::IntRect(TILE_WIDTH, 8 * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT));
@@ -153,7 +149,7 @@ void rish::Game::setupHero()
   heroHealthBarShape.setPosition(sprite.getPosition() + sf::Vector2f(0, 1 + TILE_HEIGHT));
 }
 
-void rish::Game::setupEnemy()
+void Game::setupEnemy()
 {
   spiderColumn = 5;
   spiderRow = 1;
@@ -197,7 +193,7 @@ void rish::Game::setupEnemy()
   spiderHealthBarShape.setPosition(enemy.getPosition() + sf::Vector2f(0, 1 + TILE_HEIGHT));
 }
 
-void rish::Game::addMapItem(TileId itemId, int itemColumn, int itemRow)
+void Game::addMapItem(TileId itemId, int itemColumn, int itemRow)
 {
   MapItem item = std::make_tuple(
       FIELD_ITEM,
@@ -217,7 +213,7 @@ void rish::Game::addMapItem(TileId itemId, int itemColumn, int itemRow)
   mapItems.push_back(std::move(item));
 }
 
-void rish::Game::setTreasureChestSprite(TreasureChest &chest)
+void Game::setTreasureChestSprite(TreasureChest &chest)
 {
   auto &spr = getTreasureChestSprite(chest);
   auto chestKind = getTreasureChestKind(chest);
@@ -240,7 +236,7 @@ void rish::Game::setTreasureChestSprite(TreasureChest &chest)
   spr->setTextureRect(sf::IntRect(srcX * TILE_WIDTH, srcY * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT));
 }
 
-void rish::Game::addMapTreasureChest(int chestKind, int chestColumn, int chestRow, int chestContent, int chestQty)
+void Game::addMapTreasureChest(int chestKind, int chestColumn, int chestRow, int chestContent, int chestQty)
 {
   TreasureChest chest = std::make_tuple(
       chestKind,
@@ -257,62 +253,38 @@ void rish::Game::addMapTreasureChest(int chestKind, int chestColumn, int chestRo
   treasureChests.push_back(std::move(chest));
 }
 
-void rish::Game::setTilemapTileVertices(int mapIndex)
+void Game::changeTilemapTile(int mapIndex, TileId tileId)
 {
-  int x = mapIndex % mapWidth;
-  int y = mapIndex / mapWidth;
-  int tileId = map[mapIndex];
-  int tileU = tileId % numTilesAcrossTexture;
-  int tileV = tileId / numTilesAcrossTexture;
-  sf::Vertex *quad = &mapVerts[4 * mapIndex];
-  quad[0].position = sf::Vector2f(x * TILE_WIDTH, y * TILE_HEIGHT);
-  quad[1].position = sf::Vector2f((x + 1) * TILE_WIDTH, y * TILE_HEIGHT);
-  quad[2].position = sf::Vector2f((x + 1) * TILE_WIDTH, (y + 1) * TILE_HEIGHT);
-  quad[3].position = sf::Vector2f(x * TILE_WIDTH, (y + 1) * TILE_HEIGHT);
-  quad[0].texCoords = sf::Vector2f(tileU * TILE_WIDTH, tileV * TILE_HEIGHT);
-  quad[1].texCoords = sf::Vector2f((tileU + 1) * TILE_WIDTH, tileV * TILE_HEIGHT);
-  quad[2].texCoords = sf::Vector2f((tileU + 1) * TILE_WIDTH, (tileV + 1) * TILE_HEIGHT);
-  quad[3].texCoords = sf::Vector2f(tileU * TILE_WIDTH, (tileV + 1) * TILE_HEIGHT);
+  level.setTile(mapIndex, tileId);
 }
 
-void rish::Game::changeTilemapTile(int mapIndex, TileId tileId)
+void Game::setupTilemap()
 {
-  map[mapIndex] = tileId;
-  setTilemapTileVertices(mapIndex);
-}
-
-void rish::Game::setupTilemap()
-{
-  mapVerts.setPrimitiveType(sf::PrimitiveType::Quads);
-  mapVerts.resize(4 * mapWidth * mapHeight);
-
-  for (int i = 0; i < mapWidth * mapHeight; i++)
+  level.setTexture(gfxTexture);
+  level.loadFromDataArray(firstMap);
+  int numObjs = level.getData().getNumObjects();
+  for (int i = 0; i < numObjs; i++)
   {
-    setTilemapTileVertices(i);
-  }
-
-  for (int i = 0; i < numMapItems; i++)
-  {
-    int itemId = map[mapItemDataIndex + 1 + i * 3];
-    int itemColumn = map[mapItemDataIndex + 1 + (i * 3) + 1];
-    int itemRow = map[mapItemDataIndex + 1 + (i * 3) + 2];
-    addMapItem(itemId, itemColumn, itemRow);
-  }
-
-  for (int i = 0; i < numTreasureChests; i++)
-  {
-    int base = treasureChestDataIndex + (i * TREASURE_CHEST_DATA_STRIDE);
-    int chestKind = map[base + 0];
-    int chestColumn = map[base + 1];
-    int chestRow = map[base + 2];
-    int chestContent = map[base + 3];
-    int chestQty = map[base + 4];
-
-    addMapTreasureChest(chestKind, chestColumn, chestRow, chestContent, chestQty);
+    auto obj = level.getData().getObject(i);
+    auto type = obj.getType();
+    if (type == MAP_ITEM_OBJ)
+    {
+      int itemId = obj.getData().at(0);
+      auto [itemColumn, itemRow] = obj.getCoordinates();
+      addMapItem(itemId, itemColumn, itemRow);
+    }
+    else if (type == TREASURE_CHEST_OBJ)
+    {
+      int chestKind = obj.getData().at(0);
+      int chestContent = obj.getData().at(1);
+      int chestQty = obj.getData().at(2);
+      auto [chestColumn, chestRow] = obj.getCoordinates();
+      addMapTreasureChest(chestKind, chestColumn, chestRow, chestContent, chestQty);
+    }
   }
 }
 
-void rish::Game::setupInventoryItemUI(InventoryItem &inventoryItem, unsigned long slotNumber)
+void Game::setupInventoryItemUI(InventoryItem &inventoryItem, unsigned long slotNumber)
 {
   auto &inventorySprite = getInventoryItemUISprite(inventoryItem);
   auto &inventoryText = getInventoryItemUIText(inventoryItem);
@@ -365,7 +337,7 @@ void rish::Game::setupInventoryItemUI(InventoryItem &inventoryItem, unsigned lon
   inventoryText->setPosition(sf::Vector2f(textX, textY));
 }
 
-void rish::Game::collectMapItem(MapItem *itemCollected)
+void Game::collectMapItem(MapItem *itemCollected)
 {
   setMapItemState(*itemCollected, INVENTORY_ITEM);
 
@@ -379,7 +351,7 @@ void rish::Game::collectMapItem(MapItem *itemCollected)
   heroItems.push_back(std::move(inventoryItem));
 }
 
-void rish::Game::addItemToInventory(TileId tileId)
+void Game::addItemToInventory(TileId tileId)
 {
   InventoryItem inventoryItem = std::make_tuple(
       std::make_shared<MapItem>(),
@@ -404,21 +376,21 @@ void rish::Game::addItemToInventory(TileId tileId)
   heroItems.push_back(std::move(inventoryItem));
 }
 
-bool rish::Game::isUsedInventoryItem(InventoryItem &item)
+bool Game::isUsedInventoryItem(InventoryItem &item)
 {
   auto &mapItem = getInventoryItemRef(item);
   auto state = getMapItemState(*mapItem);
   return state == USED_INVENTORY_ITEM;
 }
 
-void rish::Game::updateInventoryUI()
+void Game::updateInventoryUI()
 {
   // erase the items which have been used
   heroItems.erase(
       std::remove_if(
           heroItems.begin(),
           heroItems.end(),
-          std::bind(&rish::Game::isUsedInventoryItem, this, std::placeholders::_1)),
+          std::bind(&Game::isUsedInventoryItem, this, std::placeholders::_1)),
       heroItems.end());
   // update the remaining items ui
   for (unsigned long i = 0; i < heroItems.size(); i++)
@@ -427,7 +399,7 @@ void rish::Game::updateInventoryUI()
   }
 }
 
-void rish::Game::handleHeroAttackAction()
+void Game::handleHeroAttackAction()
 {
   bool hitAbove = heroRow - 1 == spiderRow && heroColumn == spiderColumn;
   bool hitBelow = heroRow + 1 == spiderRow && heroColumn == spiderColumn;
@@ -440,7 +412,7 @@ void rish::Game::handleHeroAttackAction()
   }
 }
 
-bool rish::Game::handleOpenTreasureChestAction()
+bool Game::handleOpenTreasureChestAction()
 {
   for (auto &chest : treasureChests)
   {
@@ -512,7 +484,7 @@ bool rish::Game::handleOpenTreasureChestAction()
   return false;
 }
 
-bool rish::Game::handleOpenDoorAction()
+bool Game::handleOpenDoorAction()
 {
   std::vector<std::pair<TileId, int>> neighboringTileIds;
 
@@ -521,18 +493,18 @@ bool rish::Game::handleOpenDoorAction()
   {
     auto x = heroColumn;
     auto y = heroRow - 1;
-    int index = x + (y * mapWidth);
-    auto tileId = map[index];
+    int index = x + (y * level.getData().getWidth());
+    auto tileId = level.getData().getTile(index);
     neighboringTileIds.push_back(std::make_pair(tileId, index));
   }
 
   // if there is a tile below the hero, add to the list of neighboring tile ids
-  if (heroRow + 1 < mapHeight)
+  if (heroRow + 1 < level.getData().getHeight())
   {
     auto x = heroColumn;
     auto y = heroRow + 1;
-    int index = x + (y * mapWidth);
-    auto tileId = map[index];
+    int index = x + (y * level.getData().getWidth());
+    auto tileId = level.getData().getTile(index);
     neighboringTileIds.push_back(std::make_pair(tileId, index));
   }
 
@@ -541,18 +513,18 @@ bool rish::Game::handleOpenDoorAction()
   {
     auto x = heroColumn - 1;
     auto y = heroRow;
-    int index = x + (y * mapWidth);
-    auto tileId = map[index];
+    int index = x + (y * level.getData().getWidth());
+    auto tileId = level.getData().getTile(index);
     neighboringTileIds.push_back(std::make_pair(tileId, index));
   }
 
   // if there is a tile to the right of the hero, add to the list of neighboring tile ids
-  if (heroColumn + 1 < mapWidth)
+  if (heroColumn + 1 < level.getData().getWidth())
   {
     auto x = heroColumn + 1;
     auto y = heroRow;
-    int index = x + (y * mapWidth);
-    auto tileId = map[index];
+    int index = x + (y * level.getData().getWidth());
+    auto tileId = level.getData().getTile(index);
     neighboringTileIds.push_back(std::make_pair(tileId, index));
   }
 
@@ -578,7 +550,7 @@ bool rish::Game::handleOpenDoorAction()
   return false;
 }
 
-bool rish::Game::handleHeroInteractAction()
+bool Game::handleHeroInteractAction()
 {
   // if we opened a treasure chest, the interaction was successful
   if (handleOpenTreasureChestAction())
@@ -595,7 +567,7 @@ bool rish::Game::handleHeroInteractAction()
   return false;
 }
 
-void rish::Game::checkForHeroVsMapItemCollisions()
+void Game::checkForHeroVsMapItemCollisions()
 {
   for (auto &item : mapItems)
   {
@@ -611,7 +583,7 @@ void rish::Game::checkForHeroVsMapItemCollisions()
   }
 }
 
-void rish::Game::setHeroPosition(int column, int row)
+void Game::setHeroPosition(int column, int row)
 {
   // update the hero world position
   heroColumn = column;
@@ -624,7 +596,7 @@ void rish::Game::setHeroPosition(int column, int row)
   heroHealthBarShape.setPosition(sprite.getPosition() + sf::Vector2f(0, TILE_HEIGHT));
 }
 
-void rish::Game::checkForHeroVsEnemyCollisions(int lastColumn, int lastRow)
+void Game::checkForHeroVsEnemyCollisions(int lastColumn, int lastRow)
 {
   // colliding with dead invisible spiders is bad mmkay
   if (!isSpiderAlive)
@@ -638,7 +610,7 @@ void rish::Game::checkForHeroVsEnemyCollisions(int lastColumn, int lastRow)
   }
 }
 
-void rish::Game::checkForHeroVsTreasureChestCollisions(int lastColumn, int lastRow)
+void Game::checkForHeroVsTreasureChestCollisions(int lastColumn, int lastRow)
 {
   for (auto &chest : treasureChests)
   {
@@ -651,7 +623,7 @@ void rish::Game::checkForHeroVsTreasureChestCollisions(int lastColumn, int lastR
   }
 }
 
-void rish::Game::activateInventoryItemSlot(unsigned long slotNumber)
+void Game::activateInventoryItemSlot(unsigned long slotNumber)
 {
   if (slotNumber >= heroItems.size())
   {
@@ -676,7 +648,7 @@ void rish::Game::activateInventoryItemSlot(unsigned long slotNumber)
   }
 }
 
-bool rish::Game::handleInventoryHotkeys(sf::Event &event)
+bool Game::handleInventoryHotkeys(sf::Event &event)
 {
   for (auto &hotkey : inventorySlotKeys)
   {
@@ -689,7 +661,7 @@ bool rish::Game::handleInventoryHotkeys(sf::Event &event)
   return false;
 }
 
-void rish::Game::handleHeroKeyPressedEvent(sf::Event &event)
+void Game::handleHeroKeyPressedEvent(sf::Event &event)
 {
   if (handleInventoryHotkeys(event))
   {
@@ -716,7 +688,7 @@ void rish::Game::handleHeroKeyPressedEvent(sf::Event &event)
   }
   else if (event.key.code == sf::Keyboard::Down)
   {
-    if (heroY < mapHeight - 1)
+    if (heroY < level.getData().getHeight() - 1)
     {
       heroY += 1;
       didHeroMove = true;
@@ -732,7 +704,7 @@ void rish::Game::handleHeroKeyPressedEvent(sf::Event &event)
   }
   else if (event.key.code == sf::Keyboard::Right)
   {
-    if (heroX < mapWidth - 1)
+    if (heroX < level.getData().getWidth() - 1)
     {
       heroX += 1;
       didHeroMove = true;
@@ -741,7 +713,7 @@ void rish::Game::handleHeroKeyPressedEvent(sf::Event &event)
 
   if (didHeroMove)
   {
-    int tileId = map[heroX + heroY * mapWidth];
+    int tileId = level.getData().getTile(heroX, heroY);
     bool isWalkableTile = walkableTiles.count(tileId) != 0;
     bool isHazardTile = hazardTiles.count(tileId) != 0;
     if (isWalkableTile)
@@ -760,7 +732,7 @@ void rish::Game::handleHeroKeyPressedEvent(sf::Event &event)
   }
 }
 
-void rish::Game::processEvents()
+void Game::processEvents()
 {
   sf::Event event;
   while (window.pollEvent(event))
@@ -783,7 +755,7 @@ void rish::Game::processEvents()
   }
 }
 
-bool rish::Game::determineIfSpiderShouldMove(sf::Time &deltaTime)
+bool Game::determineIfSpiderShouldMove(sf::Time &deltaTime)
 {
   bool shouldSpiderMove = false;
   float dt = deltaTime.asSeconds();
@@ -808,7 +780,7 @@ bool rish::Game::determineIfSpiderShouldMove(sf::Time &deltaTime)
   return shouldSpiderMove;
 }
 
-void rish::Game::handleHeroWasDamagedEvent()
+void Game::handleHeroWasDamagedEvent()
 {
   if (heroWasDamaged)
   {
@@ -827,7 +799,7 @@ void rish::Game::handleHeroWasDamagedEvent()
   }
 }
 
-void rish::Game::spawnRandomItemOnMapAt(int column, int row)
+void Game::spawnRandomItemOnMapAt(int column, int row)
 {
   std::cout << "spawn random item at " << std::to_string(column) << "," << std::to_string(row) << std::endl;
   int index = rollInt(0, itemsDatabase.size() - 1);
@@ -836,7 +808,7 @@ void rish::Game::spawnRandomItemOnMapAt(int column, int row)
   addMapItem(tileId, column, row);
 }
 
-void rish::Game::handleSpiderWasDamagedEvent()
+void Game::handleSpiderWasDamagedEvent()
 {
   if (spiderWasDamaged)
   {
@@ -860,7 +832,7 @@ void rish::Game::handleSpiderWasDamagedEvent()
   }
 }
 
-void rish::Game::handleSpiderMovement(sf::Time &deltaTime)
+void Game::handleSpiderMovement(sf::Time &deltaTime)
 {
   // dead spiders should not move
   if (!isSpiderAlive)
@@ -891,7 +863,7 @@ void rish::Game::handleSpiderMovement(sf::Time &deltaTime)
   }
 }
 
-void rish::Game::prepareRender()
+void Game::prepareRender()
 {
   // before rendering, the render target should be cleared and the view transformation set
 
@@ -899,19 +871,19 @@ void rish::Game::prepareRender()
   window.setView(view);
 }
 
-void rish::Game::finishRender()
+void Game::finishRender()
 {
   // copies the rendered scene to the display
 
   window.display();
 }
 
-void rish::Game::renderTilemap()
+void Game::renderTilemap()
 {
-  window.draw(mapVerts, &gfxTexture);
+  level.renderTilemap(window);
 }
 
-void rish::Game::renderTreasureChests()
+void Game::renderTreasureChests()
 {
   for (auto &chest : treasureChests)
   {
@@ -920,7 +892,7 @@ void rish::Game::renderTreasureChests()
   }
 }
 
-void rish::Game::renderMapItems()
+void Game::renderMapItems()
 {
   for (auto &item : mapItems)
   {
@@ -933,20 +905,16 @@ void rish::Game::renderMapItems()
   }
 }
 
-void rish::Game::renderEnemy()
+void Game::renderEnemy()
 {
   if (isSpiderAlive)
   {
     window.draw(enemy);
     window.draw(spiderHealthBarShape);
   }
-  else
-  {
-    window.draw(enemy);
-  }
 }
 
-void rish::Game::renderHero()
+void Game::renderHero()
 {
   if (isHeroAlive)
   {
@@ -955,7 +923,7 @@ void rish::Game::renderHero()
   }
 }
 
-void rish::Game::renderInventoryUI()
+void Game::renderInventoryUI()
 {
   for (auto &item : heroItems)
   {
@@ -971,7 +939,7 @@ void rish::Game::renderInventoryUI()
   }
 }
 
-void rish::Game::applyDamageToHero(float amount)
+void Game::applyDamageToHero(float amount)
 {
   float health = static_cast<float>(heroHealth);
   heroHealth = static_cast<int>(health - amount);
@@ -988,27 +956,35 @@ void rish::Game::applyDamageToHero(float amount)
   heroHealthBarShape.setSize(sf::Vector2f(healthFill, 2));
 }
 
-bool rish::Game::canUseHealthPotion()
+bool Game::canUseHealthPotion()
 {
   bool result = isHeroAlive && heroHealth < heroMaxHealth;
   std::cout << (result ? "Hero is hurt - can use" : "Hero is fully healed - no use") << std::endl;
   return result;
 }
 
-void rish::Game::useHealthPotion()
+void Game::useHealthPotion()
 {
   std::cout << "Used Health Potion" << std::endl;
   float potionStrength = 0.34f;
   applyDamageToHero(-(static_cast<float>(heroMaxHealth) * potionStrength));
 }
 
-bool rish::Game::canUseManaPotion()
+bool Game::canUseManaPotion()
 {
   return false;
 }
 
-void rish::Game::useManaPotion()
+void Game::useManaPotion()
 {
+}
+
+void Game::setSpriteTile(sf::Sprite &sprite, TileId tileId, sf::Texture &tilesheetTexture)
+{
+  int srcX = tileId % numTilesAcrossTexture;
+  int srcY = tileId / numTilesAcrossTexture;
+  sprite.setTexture(tilesheetTexture);
+  sprite.setTextureRect(sf::IntRect(srcX * TILE_WIDTH, srcY * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT));
 }
 
 //
