@@ -83,6 +83,9 @@ namespace rish
     bool hasProperty(const std::string propertyName);
 
     void resize(int newWidth, int newHeight);
+    void setTile(int index, TileId tileId);
+    void setTile(int column, int row, TileId tileId);
+
     void removeAllObjects();
     void removeAllProperties();
     void addObject(const LevelObject &obj);
@@ -94,7 +97,6 @@ namespace rish
   {
   private:
     LevelData data;
-    std::unordered_map<int, std::unique_ptr<sf::Sprite>> sprites;
 
     sf::VertexArray vertexArray;
     sf::Texture texture;
@@ -102,6 +104,7 @@ namespace rish
     int numTilesAcrossTexture;
 
   public:
+    Level();
     Level(sf::Texture &texture);
     Level(const Level &) = delete;
     Level(Level &&) = delete;
@@ -109,7 +112,11 @@ namespace rish
     Level &operator=(Level &&) = delete;
 
     LevelData &getData();
+    void setTexture(sf::Texture &newTexture);
     void loadFromDataArray(int dataArray[]);
+
+    void setTile(int index, TileId tileId);
+    void setTile(int column, int row, TileId tileId);
 
     void renderTilemap(sf::RenderWindow &window);
   };

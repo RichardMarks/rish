@@ -5,15 +5,24 @@
 
 using namespace rish;
 
+Level::Level() : texture(), numTilesAcrossTexture(0)
+{
+}
+
 Level::Level(sf::Texture &mapTexture)
 {
-  texture = mapTexture;
-  numTilesAcrossTexture = texture.getSize().x / TILE_WIDTH;
+  setTexture(mapTexture);
 }
 
 LevelData &Level::getData()
 {
   return data;
+}
+
+void Level::setTexture(sf::Texture &newTexture)
+{
+  texture = newTexture;
+  numTilesAcrossTexture = texture.getSize().x / TILE_WIDTH;
 }
 
 void Level::loadFromDataArray(int dataArray[])
@@ -35,6 +44,7 @@ void Level::loadFromDataArray(int dataArray[])
   for (int mapIndex = 0; mapIndex < mapDataSize; mapIndex++)
   {
     int tileId = mapData[mapIndex];
+    data.setTile(mapIndex, tileId);
     int x = mapIndex % mapWidth;
     int y = mapIndex / mapWidth;
     int tileU = tileId % numTilesAcrossTexture;
@@ -103,6 +113,30 @@ void Level::loadFromDataArray(int dataArray[])
   }
 
   std::cout << "load complete" << std::endl;
+}
+
+void Level::setTile(int index, TileId tileId)
+{
+  data.setTile(index, tileId);
+  int tileU = tileId % numTilesAcrossTexture;
+  int tileV = tileId / numTilesAcrossTexture;
+  sf::Vertex *quad = &vertexArray[4 * index];
+  quad[0].texCoords = sf::Vector2f(tileU * TILE_WIDTH, tileV * TILE_HEIGHT);
+  quad[1].texCoords = sf::Vector2f((tileU + 1) * TILE_WIDTH, tileV * TILE_HEIGHT);
+  quad[2].texCoords = sf::Vector2f((tileU + 1) * TILE_WIDTH, (tileV + 1) * TILE_HEIGHT);
+  quad[3].texCoords = sf::Vector2f(tileU * TILE_WIDTH, (tileV + 1) * TILE_HEIGHT);
+}
+
+void Level::setTile(int column, int row, TileId tileId)
+{
+  data.setTile(column, row, tileId);
+  int tileU = tileId % numTilesAcrossTexture;
+  int tileV = tileId / numTilesAcrossTexture;
+  sf::Vertex *quad = &vertexArray[4 * (column + row * data.getWidth())];
+  quad[0].texCoords = sf::Vector2f(tileU * TILE_WIDTH, tileV * TILE_HEIGHT);
+  quad[1].texCoords = sf::Vector2f((tileU + 1) * TILE_WIDTH, tileV * TILE_HEIGHT);
+  quad[2].texCoords = sf::Vector2f((tileU + 1) * TILE_WIDTH, (tileV + 1) * TILE_HEIGHT);
+  quad[3].texCoords = sf::Vector2f(tileU * TILE_WIDTH, (tileV + 1) * TILE_HEIGHT);
 }
 
 void Level::renderTilemap(sf::RenderWindow &window)
@@ -287,6 +321,16 @@ void LevelData::resize(int newWidth, int newHeight)
   height = newHeight;
   tileData.resize(newWidth * newHeight);
   removeAllObjects();
+}
+
+void LevelData::setTile(int index, TileId tileId)
+{
+  tileData[index] = tileId;
+}
+
+void LevelData::setTile(int column, int row, TileId tileId)
+{
+  tileData[column + row * width] = tileId;
 }
 
 void LevelData::removeAllObjects()
