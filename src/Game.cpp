@@ -109,9 +109,9 @@ void Game::run()
 
     sf::Time deltaTime = clock.restart();
 
-    handleSpiderMovement(deltaTime);
     handleHeroWasDamagedEvent();
-    handleSpiderWasDamagedEvent();
+
+    spider.update(deltaTime);
 
     // rendering starts here
     prepareRender();
@@ -139,25 +139,28 @@ bool Game::chanceOf(float percentage)
 
 void Game::setupHero()
 {
-  sprite.setTexture(gfxTexture);
-  sprite.setTextureRect(sf::IntRect(TILE_WIDTH, 8 * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT));
+  setSpriteTile(heroSprite, 97, gfxTexture);
 
-  sprite.setPosition(sf::Vector2f(TILE_WIDTH * heroColumn, TILE_HEIGHT * heroRow));
+  heroSprite.setPosition(sf::Vector2f(TILE_WIDTH * heroColumn, TILE_HEIGHT * heroRow));
 
   heroHealthBarShape.setFillColor(sf::Color::Green);
   heroHealthBarShape.setSize(sf::Vector2f(16, 2));
-  heroHealthBarShape.setPosition(sprite.getPosition() + sf::Vector2f(0, 1 + TILE_HEIGHT));
+  heroHealthBarShape.setPosition(heroSprite.getPosition() + sf::Vector2f(0, 1 + TILE_HEIGHT));
 }
 
 void Game::setupEnemy()
 {
-  spiderColumn = 5;
-  spiderRow = 1;
-  isSpiderAlive = true;
-  spiderTime = 0.0f;
-  spiderTimeToMove = 1.0f;
+  spider.setGame(this);
+  setSpriteTile(spider.getSprite(), 122, gfxTexture);
 
-  int spiderPathPairs[] = {
+  spider.setPosition(5, 1);
+  spider.setDead(false);
+  spider.setDamaged(false);
+  spider.setResting(false);
+  spider.setMaxHealth(15);
+  spider.setRateOfMovement(1.0f);
+  spider.setRateOfRest(2.0f);
+  int path[] = {
       // pairs of tile coordinates to move the spider to each movement pass
       5, 2,
       5, 3,
@@ -169,28 +172,19 @@ void Game::setupEnemy()
       5, 1,
       //
   };
-  std::copy(
-      &spiderPathPairs[0],
-      &spiderPathPairs[(sizeof(spiderPathPairs) / (sizeof(int)))],
-      std::back_inserter(spiderPath));
+  spider.setMovementPath(8, path);
 
-  spiderCurrentPathIndex = 0;
-  spiderFinalPathIndex = (spiderPath.size() / 2) - 1;
-  spiderHealth = 15;
-  spiderMaxHealth = 15;
-  spiderWasDamaged = false;
-  spiderIsResting = false;
-  spiderRestTime = 0.0f;
-  spiderTimeToRest = 2.0f;
+  /*
 
-  enemy.setTexture(gfxTexture);
-  enemy.setTextureRect(sf::IntRect(2 * TILE_WIDTH, 10 * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT));
-
-  enemy.setPosition(sf::Vector2f(TILE_WIDTH * spiderColumn, TILE_HEIGHT * spiderRow));
-
-  spiderHealthBarShape.setFillColor(sf::Color::Red);
-  spiderHealthBarShape.setSize(sf::Vector2f(16, 2));
-  spiderHealthBarShape.setPosition(enemy.getPosition() + sf::Vector2f(0, 1 + TILE_HEIGHT));
+    enemyHealthBars[enemy.getId()] = std::make_shared<HealthBar>();
+    enemy.watchHealth([&](const int current, const int maximum) {
+      auto bar = *(enemyHealthBars[enemy.getId()]);
+      bar.setCurrent(current);
+      bar.setMaximum(maximum);
+      bar.resize(sf::Vector2f(16, 2));
+      bar.move(enemy.getPosition() + sf::Vector2f(0, 1 + TILE_HEIGHT));
+    }, true);
+  */
 }
 
 void Game::addMapItem(TileId itemId, int itemColumn, int itemRow)
@@ -401,6 +395,7 @@ void Game::updateInventoryUI()
 
 void Game::handleHeroAttackAction()
 {
+  auto [spiderColumn, spiderRow] = spider.getPosition();
   bool hitAbove = heroRow - 1 == spiderRow && heroColumn == spiderColumn;
   bool hitBelow = heroRow + 1 == spiderRow && heroColumn == spiderColumn;
   bool hitLeft = heroRow == spiderRow && heroColumn - 1 == spiderColumn;
@@ -408,7 +403,7 @@ void Game::handleHeroAttackAction()
   bool hitSpider = hitAbove || hitBelow || hitLeft || hitRight;
   if (hitSpider)
   {
-    spiderWasDamaged = true;
+    spider.setDamaged(true);
   }
 }
 
@@ -590,19 +585,28 @@ void Game::setHeroPosition(int column, int row)
   heroRow = row;
 
   // update the hero sprite position
-  sprite.setPosition(sf::Vector2f(TILE_WIDTH * heroColumn, TILE_HEIGHT * heroRow));
+  heroSprite.setPosition(sf::Vector2f(TILE_WIDTH * heroColumn, TILE_HEIGHT * heroRow));
 
   // update the hero health bar position
-  heroHealthBarShape.setPosition(sprite.getPosition() + sf::Vector2f(0, TILE_HEIGHT));
+  heroHealthBarShape.setPosition(heroSprite.getPosition() + sf::Vector2f(0, TILE_HEIGHT));
+}
+
+void Game::checkForHeroVsEnemyCollisionAt(int testColumn, int testRow)
+{
+  if (heroColumn == testColumn && heroRow == testRow)
+  {
+    heroWasDamaged = true;
+  }
 }
 
 void Game::checkForHeroVsEnemyCollisions(int lastColumn, int lastRow)
 {
   // colliding with dead invisible spiders is bad mmkay
-  if (!isSpiderAlive)
+  if (spider.isDead())
   {
     return;
   }
+  auto [spiderColumn, spiderRow] = spider.getPosition();
   if (heroColumn == spiderColumn && heroRow == spiderRow)
   {
     heroWasDamaged = true;
@@ -727,6 +731,7 @@ void Game::handleHeroKeyPressedEvent(sf::Event &event)
       if (isHazardTile)
       {
         heroWasDamaged = true;
+        std::cout << "hero was damaged by hazard tile" << std::endl;
       }
     }
   }
@@ -755,35 +760,11 @@ void Game::processEvents()
   }
 }
 
-bool Game::determineIfSpiderShouldMove(sf::Time &deltaTime)
-{
-  bool shouldSpiderMove = false;
-  float dt = deltaTime.asSeconds();
-  if (spiderIsResting)
-  {
-    spiderRestTime += dt;
-    if (spiderRestTime >= spiderTimeToRest)
-    {
-      spiderRestTime -= spiderTimeToRest;
-      spiderIsResting = false;
-    }
-  }
-  else
-  {
-    spiderTime += dt;
-    if (spiderTime >= spiderTimeToMove)
-    {
-      spiderTime -= spiderTimeToMove;
-      shouldSpiderMove = true;
-    }
-  }
-  return shouldSpiderMove;
-}
-
 void Game::handleHeroWasDamagedEvent()
 {
   if (heroWasDamaged)
   {
+    std::cout << "handling hero damaged event" << std::endl;
     heroWasDamaged = false;
     float currentHealth = static_cast<float>(heroHealth);
     float maxHealth = static_cast<float>(heroMaxHealth);
@@ -806,61 +787,6 @@ void Game::spawnRandomItemOnMapAt(int column, int row)
   auto it = itemsDatabase.begin();
   auto tileId = std::next(it, index)->first;
   addMapItem(tileId, column, row);
-}
-
-void Game::handleSpiderWasDamagedEvent()
-{
-  if (spiderWasDamaged)
-  {
-    spiderIsResting = true;
-    spiderWasDamaged = false;
-    float currentHealth = static_cast<float>(spiderHealth);
-    float maxHealth = static_cast<float>(spiderMaxHealth);
-    float reducedHealth = currentHealth - (maxHealth / 3);
-    spiderHealth = static_cast<int>(reducedHealth);
-    float healthFill = 16 * (static_cast<float>(spiderHealth) / static_cast<float>(spiderMaxHealth));
-    spiderHealthBarShape.setSize(sf::Vector2f(healthFill, 2));
-    if (spiderHealth <= 0)
-    {
-      spiderHealth = 0;
-      isSpiderAlive = false;
-      if (chanceOf(47.0f))
-      {
-        spawnRandomItemOnMapAt(spiderColumn, spiderRow);
-      }
-    }
-  }
-}
-
-void Game::handleSpiderMovement(sf::Time &deltaTime)
-{
-  // dead spiders should not move
-  if (!isSpiderAlive)
-  {
-    return;
-  }
-  bool shouldSpiderMove = determineIfSpiderShouldMove(deltaTime);
-
-  if (shouldSpiderMove)
-  {
-    int nextSpiderColumn = spiderPath[0 + spiderCurrentPathIndex * 2];
-    int nextSpiderRow = spiderPath[1 + spiderCurrentPathIndex * 2];
-
-    if (!heroWasDamaged && (heroColumn == nextSpiderColumn && heroRow == nextSpiderRow))
-    {
-      heroWasDamaged = true;
-    }
-
-    spiderColumn = nextSpiderColumn;
-    spiderRow = nextSpiderRow;
-    enemy.setPosition(sf::Vector2f(TILE_WIDTH * spiderColumn, TILE_HEIGHT * spiderRow));
-    spiderHealthBarShape.setPosition(enemy.getPosition() + sf::Vector2f(0, 1 + TILE_HEIGHT));
-    spiderCurrentPathIndex += 1;
-    if (spiderCurrentPathIndex > spiderFinalPathIndex)
-    {
-      spiderCurrentPathIndex = 0;
-    }
-  }
 }
 
 void Game::prepareRender()
@@ -907,18 +833,14 @@ void Game::renderMapItems()
 
 void Game::renderEnemy()
 {
-  if (isSpiderAlive)
-  {
-    window.draw(enemy);
-    window.draw(spiderHealthBarShape);
-  }
+  spider.render(window);
 }
 
 void Game::renderHero()
 {
   if (isHeroAlive)
   {
-    window.draw(sprite);
+    window.draw(heroSprite);
     window.draw(heroHealthBarShape);
   }
 }

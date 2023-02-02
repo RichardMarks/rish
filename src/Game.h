@@ -4,6 +4,7 @@
 #include "constants.h"
 #include "types.h"
 #include "Level.h"
+#include "Enemy.h"
 
 // typedefs
 
@@ -27,7 +28,7 @@ namespace rish
     ItemDB itemsDatabase;
 
     // HERO VARS
-    sf::Sprite sprite;
+    sf::Sprite heroSprite;
     std::vector<InventoryItem> heroItems;
 
     int heroColumn = 3;
@@ -49,26 +50,11 @@ namespace rish
     std::set<int> hazardTiles;
 
     // ENEMY VARS
-    sf::Sprite enemy;
-    int spiderColumn;
-    int spiderRow;
-    bool isSpiderAlive;
-    float spiderTime;
-    float spiderTimeToMove;
-    std::vector<int> spiderPath;
-    int spiderCurrentPathIndex;
-    int spiderFinalPathIndex;
-    int spiderHealth;
-    int spiderMaxHealth;
-    bool spiderWasDamaged;
-    bool spiderIsResting;
-    float spiderRestTime;
-    float spiderTimeToRest;
+    Enemy spider;
 
     // UI VARS
 
     sf::RectangleShape heroHealthBarShape;
-    sf::RectangleShape spiderHealthBarShape;
 
   public:
     Game();
@@ -98,17 +84,17 @@ namespace rish
     bool handleHeroInteractAction();
     void checkForHeroVsMapItemCollisions();
     void setHeroPosition(int column, int row);
+    void checkForHeroVsEnemyCollisionAt(int testColumn, int testRow);
     void checkForHeroVsEnemyCollisions(int lastColumn, int lastRow);
     void checkForHeroVsTreasureChestCollisions(int lastColumn, int lastRow);
     void activateInventoryItemSlot(unsigned long slotNumber);
     bool handleInventoryHotkeys(sf::Event &event);
     void handleHeroKeyPressedEvent(sf::Event &event);
     void processEvents();
-    bool determineIfSpiderShouldMove(sf::Time &deltaTime);
+
     void handleHeroWasDamagedEvent();
     void spawnRandomItemOnMapAt(int column, int row);
-    void handleSpiderWasDamagedEvent();
-    void handleSpiderMovement(sf::Time &deltaTime);
+
     void prepareRender();
     void finishRender();
     void renderTilemap();
