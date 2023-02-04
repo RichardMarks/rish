@@ -8,6 +8,9 @@
 #include <vector>
 #include <unordered_map>
 #include <set>
+#include <memory>
+#include <functional>
+#include <chrono>
 #include <SFML/Graphics.hpp>
 
 typedef std::function<bool()> BoolFn;
