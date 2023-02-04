@@ -13,6 +13,8 @@
 #include <chrono>
 #include <SFML/Graphics.hpp>
 
+typedef int *LevelSourceArray;
+
 typedef std::function<bool()> BoolFn;
 typedef std::function<void()> VoidFn;
 

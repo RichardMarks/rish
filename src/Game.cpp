@@ -41,6 +41,43 @@ int firstMap[] = {
     //
 };
 
+int secondMap[] = {
+    // map dimension
+    10, 7,
+    // map tile ids
+    40, 40, 40, 40, 40, 40, 40, 40, 40, 40,
+    40, 48, 48, 48, 48, 48, 40, 48, 48, 40,
+    40, 48, 48, 48, 48, 48, 45, 48, 48, 40,
+    40, 48, 48, 48, 48, 48, 40, 48, 48, 40,
+    40, 48, 48, 48, 48, 48, 40, 48, 48, 40,
+    40, 48, 48, 48, 48, 48, 40, 48, 48, 40,
+    40, 40, 40, 40, 40, 40, 40, 40, 40, 40,
+    //
+    // BEGIN ITEMS DATA SECTION
+    // NUM_ITEMS
+    0,
+    // ITEM_ID, COLUMN, ROW,
+    // 114 - health potion
+    // 116 - mana potion
+    // 114, 2, 2,
+    // 114, 4, 3,
+    // 116, 4, 5,
+    // BEGIN TREASURE CHESTS DATA SECTION
+    // NUM_CHESTS
+    0,
+    // CHEST_KIND, COLUMN, ROW, OPTIONAL_CONTENTS, OPTIONAL_QTY
+    // CHEST_UNLOCKED_CLOSED, 1, 3, 0, 0,
+    // CHEST_UNLOCKED_CLOSED, 1, 5, 0, 0,
+    // CHEST_UNLOCKED_CLOSED, 3, 1, 116, 4,
+    //
+    // BEGIN ENEMY DATA SECTION
+    // NUM_ENEMIES
+    0,
+    // ENEMY_KIND, COLUMN, ROW
+    // SPIDER_ENEMY, 5, 1,
+    //
+};
+
 Game::Game() : window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "rish"),
                view(sf::FloatRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT))
 {
@@ -101,6 +138,10 @@ void Game::setup()
       0,
       std::bind(&Game::canUseManaPotion, this),
       std::bind(&Game::useManaPotion, this));
+
+  levelSources.push_back(firstMap);
+  levelSources.push_back(secondMap);
+  currentLevelIndex = 0;
 
   setupHero();
   setupTilemap();
@@ -232,7 +273,27 @@ void Game::changeTilemapTile(int mapIndex, TileId tileId)
 void Game::setupTilemap()
 {
   level.setTexture(gfxTexture);
-  level.loadFromDataArray(firstMap);
+  changeLevel(currentLevelIndex);
+}
+
+void Game::changeLevel(unsigned int levelIndex)
+{
+  unsigned int numLevels = levelSources.size();
+  if (numLevels == 0)
+  {
+    throw std::runtime_error("No level sources registered");
+  }
+  if (levelIndex >= numLevels)
+  {
+    levelIndex = 0;
+  }
+  LevelSourceArray sourceArray = levelSources.at(levelIndex);
+  level.loadFromDataArray(sourceArray);
+
+  mapItems.clear();
+  treasureChests.clear();
+  enemies.clear();
+
   int numObjs = level.getData().getNumObjects();
   for (int i = 0; i < numObjs; i++)
   {

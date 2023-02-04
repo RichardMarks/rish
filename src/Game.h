@@ -35,17 +35,16 @@ namespace rish
 
     // MAP VARS
 
+    std::vector<LevelSourceArray> levelSources;
+    unsigned int currentLevelIndex;
+
     Level level;
     std::vector<MapItem> mapItems;
     std::vector<TreasureChest> treasureChests;
+    std::vector<std::unique_ptr<Enemy>> enemies;
 
     std::set<int> walkableTiles;
     std::set<int> hazardTiles;
-
-    // ENEMY VARS
-    std::vector<std::unique_ptr<Enemy>> enemies;
-
-    // UI VARS
 
   public:
     Game();
@@ -63,6 +62,7 @@ namespace rish
     void setTilemapTileVertices(int mapIndex);
     void changeTilemapTile(int mapIndex, TileId tileId);
     void setupTilemap();
+    void changeLevel(unsigned int levelIndex);
     void setupInventoryItemUI(InventoryItem &inventoryItem, unsigned long slotNumber);
     void collectMapItem(MapItem *itemCollected);
     void addItemToInventory(TileId tileId);
