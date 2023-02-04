@@ -44,7 +44,7 @@ A small rogue-like game developed with SFML and C++
   - ✅ refactor runtime into a Game class
   - ✅ refactor enemy code into an Enemy class
   - ✅ refactor map code into a Level class
-  - refactor hero code into a Hero class
+  - ✅ refactor hero code into a Hero class
   - map should be populated with enemies
   - implement a second level map
   - hero should be able to navigate between two maps using a door

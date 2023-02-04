@@ -5,6 +5,7 @@
 #include "types.h"
 #include "Level.h"
 #include "Enemy.h"
+#include "Hero.h"
 
 // typedefs
 
@@ -28,17 +29,9 @@ namespace rish
     ItemDB itemsDatabase;
 
     // HERO VARS
-    sf::Sprite heroSprite;
     std::vector<InventoryItem> heroItems;
 
-    int heroColumn = 3;
-    int heroRow = 3;
-    bool isHeroAlive = true;
-
-    int heroHealth = 30;
-    int heroMaxHealth = 30;
-
-    bool heroWasDamaged = false;
+    Hero hero;
 
     // MAP VARS
 
@@ -92,7 +85,6 @@ namespace rish
     void handleHeroKeyPressedEvent(sf::Event &event);
     void processEvents();
 
-    void handleHeroWasDamagedEvent();
     void spawnRandomItemOnMapAt(int column, int row);
 
     void prepareRender();

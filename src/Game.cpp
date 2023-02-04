@@ -109,7 +109,7 @@ void Game::run()
 
     sf::Time deltaTime = clock.restart();
 
-    handleHeroWasDamagedEvent();
+    hero.update(deltaTime);
 
     spider.update(deltaTime);
 
@@ -139,13 +139,13 @@ bool Game::chanceOf(float percentage)
 
 void Game::setupHero()
 {
-  setSpriteTile(heroSprite, 97, gfxTexture);
+  hero.setGame(this);
+  setSpriteTile(hero.getSprite(), 97, gfxTexture);
 
-  heroSprite.setPosition(sf::Vector2f(TILE_WIDTH * heroColumn, TILE_HEIGHT * heroRow));
-
-  heroHealthBarShape.setFillColor(sf::Color::Green);
-  heroHealthBarShape.setSize(sf::Vector2f(16, 2));
-  heroHealthBarShape.setPosition(heroSprite.getPosition() + sf::Vector2f(0, 1 + TILE_HEIGHT));
+  hero.setPosition(3, 3);
+  hero.setDead(false);
+  hero.setDamaged(false);
+  hero.setMaxHealth(30);
 }
 
 void Game::setupEnemy()
@@ -396,6 +396,7 @@ void Game::updateInventoryUI()
 void Game::handleHeroAttackAction()
 {
   auto [spiderColumn, spiderRow] = spider.getPosition();
+  auto [heroColumn, heroRow] = hero.getPosition();
   bool hitAbove = heroRow - 1 == spiderRow && heroColumn == spiderColumn;
   bool hitBelow = heroRow + 1 == spiderRow && heroColumn == spiderColumn;
   bool hitLeft = heroRow == spiderRow && heroColumn - 1 == spiderColumn;
@@ -427,6 +428,8 @@ bool Game::handleOpenTreasureChestAction()
     auto &coords = getTreasureChestCoordinates(chest);
     auto chestColumn = coords.first;
     auto chestRow = coords.second;
+
+    auto [heroColumn, heroRow] = hero.getPosition();
 
     bool hitAbove = heroRow - 1 == chestRow && heroColumn == chestColumn;
     bool hitBelow = heroRow + 1 == chestRow && heroColumn == chestColumn;
@@ -482,6 +485,7 @@ bool Game::handleOpenTreasureChestAction()
 bool Game::handleOpenDoorAction()
 {
   std::vector<std::pair<TileId, int>> neighboringTileIds;
+  auto [heroColumn, heroRow] = hero.getPosition();
 
   // if there is a tile above the hero, add to list of neighboring tile ids
   if (heroRow - 1 >= 0)
@@ -564,6 +568,7 @@ bool Game::handleHeroInteractAction()
 
 void Game::checkForHeroVsMapItemCollisions()
 {
+  auto [heroColumn, heroRow] = hero.getPosition();
   for (auto &item : mapItems)
   {
     auto &coord = getMapItemCoordinates(item);
@@ -580,22 +585,15 @@ void Game::checkForHeroVsMapItemCollisions()
 
 void Game::setHeroPosition(int column, int row)
 {
-  // update the hero world position
-  heroColumn = column;
-  heroRow = row;
-
-  // update the hero sprite position
-  heroSprite.setPosition(sf::Vector2f(TILE_WIDTH * heroColumn, TILE_HEIGHT * heroRow));
-
-  // update the hero health bar position
-  heroHealthBarShape.setPosition(heroSprite.getPosition() + sf::Vector2f(0, TILE_HEIGHT));
+  hero.setPosition(column, row);
 }
 
 void Game::checkForHeroVsEnemyCollisionAt(int testColumn, int testRow)
 {
+  auto [heroColumn, heroRow] = hero.getPosition();
   if (heroColumn == testColumn && heroRow == testRow)
   {
-    heroWasDamaged = true;
+    hero.setDamaged(true);
   }
 }
 
@@ -607,15 +605,17 @@ void Game::checkForHeroVsEnemyCollisions(int lastColumn, int lastRow)
     return;
   }
   auto [spiderColumn, spiderRow] = spider.getPosition();
+  auto [heroColumn, heroRow] = hero.getPosition();
   if (heroColumn == spiderColumn && heroRow == spiderRow)
   {
-    heroWasDamaged = true;
+    hero.setDamaged(true);
     setHeroPosition(lastColumn, lastRow);
   }
 }
 
 void Game::checkForHeroVsTreasureChestCollisions(int lastColumn, int lastRow)
 {
+  auto [heroColumn, heroRow] = hero.getPosition();
   for (auto &chest : treasureChests)
   {
     auto &coords = getTreasureChestCoordinates(chest);
@@ -678,6 +678,7 @@ void Game::handleHeroKeyPressedEvent(sf::Event &event)
       handleHeroAttackAction();
     }
   }
+  auto [heroColumn, heroRow] = hero.getPosition();
   bool didHeroMove = false;
   int heroX = heroColumn;
   int heroY = heroRow;
@@ -730,7 +731,7 @@ void Game::handleHeroKeyPressedEvent(sf::Event &event)
       checkForHeroVsMapItemCollisions();
       if (isHazardTile)
       {
-        heroWasDamaged = true;
+        hero.setDamaged(true);
         std::cout << "hero was damaged by hazard tile" << std::endl;
       }
     }
@@ -756,26 +757,6 @@ void Game::processEvents()
       {
         handleHeroKeyPressedEvent(event);
       }
-    }
-  }
-}
-
-void Game::handleHeroWasDamagedEvent()
-{
-  if (heroWasDamaged)
-  {
-    std::cout << "handling hero damaged event" << std::endl;
-    heroWasDamaged = false;
-    float currentHealth = static_cast<float>(heroHealth);
-    float maxHealth = static_cast<float>(heroMaxHealth);
-    float reducedHealth = currentHealth - (maxHealth * 0.25f);
-    heroHealth = static_cast<int>(reducedHealth);
-    float healthFill = 16 * (static_cast<float>(heroHealth) / static_cast<float>(heroMaxHealth));
-    heroHealthBarShape.setSize(sf::Vector2f(healthFill, 2));
-    if (heroHealth <= 0)
-    {
-      heroHealth = 0;
-      isHeroAlive = false;
     }
   }
 }
@@ -838,11 +819,7 @@ void Game::renderEnemy()
 
 void Game::renderHero()
 {
-  if (isHeroAlive)
-  {
-    window.draw(heroSprite);
-    window.draw(heroHealthBarShape);
-  }
+  hero.render(window);
 }
 
 void Game::renderInventoryUI()
@@ -863,24 +840,12 @@ void Game::renderInventoryUI()
 
 void Game::applyDamageToHero(float amount)
 {
-  float health = static_cast<float>(heroHealth);
-  heroHealth = static_cast<int>(health - amount);
-  if (heroHealth > heroMaxHealth)
-  {
-    heroHealth = heroMaxHealth;
-  }
-  else if (heroHealth <= 0)
-  {
-    heroHealth = 0;
-    isHeroAlive = false;
-  }
-  float healthFill = 16 * (static_cast<float>(heroHealth) / static_cast<float>(heroMaxHealth));
-  heroHealthBarShape.setSize(sf::Vector2f(healthFill, 2));
+  hero.applyDamage(amount);
 }
 
 bool Game::canUseHealthPotion()
 {
-  bool result = isHeroAlive && heroHealth < heroMaxHealth;
+  bool result = !hero.isDead() && hero.getHealth() < hero.getMaxHealth();
   std::cout << (result ? "Hero is hurt - can use" : "Hero is fully healed - no use") << std::endl;
   return result;
 }
@@ -889,7 +854,7 @@ void Game::useHealthPotion()
 {
   std::cout << "Used Health Potion" << std::endl;
   float potionStrength = 0.34f;
-  applyDamageToHero(-(static_cast<float>(heroMaxHealth) * potionStrength));
+  applyDamageToHero(-(static_cast<float>(hero.getMaxHealth()) * potionStrength));
 }
 
 bool Game::canUseManaPotion()
