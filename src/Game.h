@@ -43,11 +43,9 @@ namespace rish
     std::set<int> hazardTiles;
 
     // ENEMY VARS
-    Enemy spider;
+    std::vector<std::unique_ptr<Enemy>> enemies;
 
     // UI VARS
-
-    sf::RectangleShape heroHealthBarShape;
 
   public:
     Game();
@@ -58,7 +56,6 @@ namespace rish
     bool chanceOf(float percentage);
 
     void setupHero();
-    void setupEnemy();
 
     void addMapItem(TileId itemId, int itemColumn, int itemRow);
     void setTreasureChestSprite(TreasureChest &chest);

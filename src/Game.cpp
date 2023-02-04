@@ -33,6 +33,12 @@ int firstMap[] = {
     CHEST_UNLOCKED_CLOSED, 1, 5, 0, 0,
     CHEST_UNLOCKED_CLOSED, 3, 1, 116, 4,
     //
+    // BEGIN ENEMY DATA SECTION
+    // NUM_ENEMIES
+    1,
+    // ENEMY_KIND, COLUMN, ROW
+    SPIDER_ENEMY, 5, 1,
+    //
 };
 
 Game::Game() : window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "rish"),
@@ -97,12 +103,17 @@ void Game::setup()
       std::bind(&Game::useManaPotion, this));
 
   setupHero();
-  setupEnemy();
   setupTilemap();
 }
 
 void Game::run()
 {
+  auto isDead = [&](std::unique_ptr<Enemy> &enemy)
+  {
+    const Enemy &enemyRef = *(enemy.get());
+    return enemyRef.isDead();
+  };
+
   while (window.isOpen())
   {
     processEvents();
@@ -111,7 +122,12 @@ void Game::run()
 
     hero.update(deltaTime);
 
-    spider.update(deltaTime);
+    for (auto &enemy : enemies)
+    {
+      enemy->update(deltaTime);
+    }
+
+    enemies.erase(std::remove_if(enemies.begin(), enemies.end(), isDead), enemies.end());
 
     // rendering starts here
     prepareRender();
@@ -146,45 +162,6 @@ void Game::setupHero()
   hero.setDead(false);
   hero.setDamaged(false);
   hero.setMaxHealth(30);
-}
-
-void Game::setupEnemy()
-{
-  spider.setGame(this);
-  setSpriteTile(spider.getSprite(), 122, gfxTexture);
-
-  spider.setPosition(5, 1);
-  spider.setDead(false);
-  spider.setDamaged(false);
-  spider.setResting(false);
-  spider.setMaxHealth(15);
-  spider.setRateOfMovement(1.0f);
-  spider.setRateOfRest(2.0f);
-  int path[] = {
-      // pairs of tile coordinates to move the spider to each movement pass
-      5, 2,
-      5, 3,
-      5, 4,
-      5, 5,
-      5, 4,
-      5, 3,
-      5, 2,
-      5, 1,
-      //
-  };
-  spider.setMovementPath(8, path);
-
-  /*
-
-    enemyHealthBars[enemy.getId()] = std::make_shared<HealthBar>();
-    enemy.watchHealth([&](const int current, const int maximum) {
-      auto bar = *(enemyHealthBars[enemy.getId()]);
-      bar.setCurrent(current);
-      bar.setMaximum(maximum);
-      bar.resize(sf::Vector2f(16, 2));
-      bar.move(enemy.getPosition() + sf::Vector2f(0, 1 + TILE_HEIGHT));
-    }, true);
-  */
 }
 
 void Game::addMapItem(TileId itemId, int itemColumn, int itemRow)
@@ -274,6 +251,39 @@ void Game::setupTilemap()
       int chestQty = obj.getData().at(2);
       auto [chestColumn, chestRow] = obj.getCoordinates();
       addMapTreasureChest(chestKind, chestColumn, chestRow, chestContent, chestQty);
+    }
+    else if (type == ENEMY_OBJ)
+    {
+      int enemyKind = obj.getData().at(0);
+      auto [enemyColumn, enemyRow] = obj.getCoordinates();
+      auto enemy = std::make_unique<Enemy>();
+      enemy->setGame(this);
+      enemy->setPosition(enemyColumn, enemyRow);
+      if (enemyKind == SPIDER_ENEMY)
+      {
+        // TODO: the spider information needs to be stored in the map data
+        setSpriteTile(enemy->getSprite(), 122, gfxTexture);
+        enemy->setDead(false);
+        enemy->setDamaged(false);
+        enemy->setResting(false);
+        enemy->setMaxHealth(15);
+        enemy->setRateOfMovement(1.0f);
+        enemy->setRateOfRest(2.0f);
+        int path[] = {
+            // pairs of tile coordinates to move the spider to each movement pass
+            5, 2,
+            5, 3,
+            5, 4,
+            5, 5,
+            5, 4,
+            5, 3,
+            5, 2,
+            5, 1,
+            //
+        };
+        enemy->setMovementPath(8, path);
+      }
+      enemies.push_back(std::move(enemy));
     }
   }
 }
@@ -395,16 +405,19 @@ void Game::updateInventoryUI()
 
 void Game::handleHeroAttackAction()
 {
-  auto [spiderColumn, spiderRow] = spider.getPosition();
-  auto [heroColumn, heroRow] = hero.getPosition();
-  bool hitAbove = heroRow - 1 == spiderRow && heroColumn == spiderColumn;
-  bool hitBelow = heroRow + 1 == spiderRow && heroColumn == spiderColumn;
-  bool hitLeft = heroRow == spiderRow && heroColumn - 1 == spiderColumn;
-  bool hitRight = heroRow == spiderRow && heroColumn + 1 == spiderColumn;
-  bool hitSpider = hitAbove || hitBelow || hitLeft || hitRight;
-  if (hitSpider)
+  for (auto &enemy : enemies)
   {
-    spider.setDamaged(true);
+    auto [enemyColumn, enemyRow] = enemy->getPosition();
+    auto [heroColumn, heroRow] = hero.getPosition();
+    bool hitAbove = heroRow - 1 == enemyRow && heroColumn == enemyColumn;
+    bool hitBelow = heroRow + 1 == enemyRow && heroColumn == enemyColumn;
+    bool hitLeft = heroRow == enemyRow && heroColumn - 1 == enemyColumn;
+    bool hitRight = heroRow == enemyRow && heroColumn + 1 == enemyColumn;
+    bool hitEnemy = hitAbove || hitBelow || hitLeft || hitRight;
+    if (hitEnemy)
+    {
+      enemy->setDamaged(true);
+    }
   }
 }
 
@@ -599,17 +612,19 @@ void Game::checkForHeroVsEnemyCollisionAt(int testColumn, int testRow)
 
 void Game::checkForHeroVsEnemyCollisions(int lastColumn, int lastRow)
 {
-  // colliding with dead invisible spiders is bad mmkay
-  if (spider.isDead())
+  for (auto &enemy : enemies)
   {
-    return;
-  }
-  auto [spiderColumn, spiderRow] = spider.getPosition();
-  auto [heroColumn, heroRow] = hero.getPosition();
-  if (heroColumn == spiderColumn && heroRow == spiderRow)
-  {
-    hero.setDamaged(true);
-    setHeroPosition(lastColumn, lastRow);
+    if (enemy->isDead())
+    {
+      continue;
+    }
+    auto [enemyColumn, enemyRow] = enemy->getPosition();
+    auto [heroColumn, heroRow] = hero.getPosition();
+    if (heroColumn == enemyColumn && heroRow == enemyRow)
+    {
+      hero.setDamaged(true);
+      setHeroPosition(lastColumn, lastRow);
+    }
   }
 }
 
@@ -814,7 +829,10 @@ void Game::renderMapItems()
 
 void Game::renderEnemy()
 {
-  spider.render(window);
+  for (auto &enemy : enemies)
+  {
+    enemy->render(window);
+  }
 }
 
 void Game::renderHero()

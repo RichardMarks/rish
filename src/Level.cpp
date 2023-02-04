@@ -112,6 +112,25 @@ void Level::loadFromDataArray(int dataArray[])
     data.addObject(obj);
   }
 
+  int *mapEnemyData = mapTreasureChestData;
+  mapEnemyData += numTreasureChests * TREASURE_CHEST_DATA_STRIDE;
+  int numEnemies = mapEnemyData[0];
+  mapEnemyData++;
+  std::cout << "There are " << numEnemies << " enemies on the map" << std::endl;
+  for (int i = 0; i < numEnemies; i++)
+  {
+    int base = (i * ENEMY_DATA_STRIDE);
+    int enemyKind = mapEnemyData[base + 0];
+    int enemyColumn = mapEnemyData[base + 1];
+    int enemyRow = mapEnemyData[base + 2];
+    std::cout << "[" << i << "] " << enemyKind << " @ " << enemyColumn << ", " << enemyRow << std::endl;
+    LevelObject obj;
+    obj.setType(ENEMY_OBJ);
+    obj.setPosition(enemyColumn, enemyRow);
+    obj.getData().push_back(enemyKind);
+    data.addObject(obj);
+  }
+
   std::cout << "load complete" << std::endl;
 }
 
