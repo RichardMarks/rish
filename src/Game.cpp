@@ -39,6 +39,13 @@ int firstMap[] = {
     // ENEMY_KIND, COLUMN, ROW
     SPIDER_ENEMY, 5, 1,
     //
+    // BEGIN WARP DATA SECTION
+    // NUM_WARPS
+    1,
+    //
+    // COLUMN, ROW, DEST_MAP_ID, DEST_COLUMN, DEST_ROW
+    2, 0, 1, 2, 5,
+    //
 };
 
 int secondMap[] = {
@@ -51,7 +58,7 @@ int secondMap[] = {
     40, 48, 48, 48, 48, 48, 40, 48, 48, 40,
     40, 48, 48, 48, 48, 48, 40, 48, 48, 40,
     40, 48, 48, 48, 48, 48, 40, 48, 48, 40,
-    40, 40, 40, 40, 40, 40, 40, 40, 40, 40,
+    40, 40, 45, 40, 40, 40, 40, 40, 40, 40,
     //
     // BEGIN ITEMS DATA SECTION
     // NUM_ITEMS
@@ -75,6 +82,12 @@ int secondMap[] = {
     0,
     // ENEMY_KIND, COLUMN, ROW
     // SPIDER_ENEMY, 5, 1,
+    // BEGIN WARP DATA SECTION
+    // NUM_WARPS
+    1,
+    //
+    // COLUMN, ROW, DEST_MAP_ID, DEST_COLUMN, DEST_ROW
+    2, 6, 0, 2, 1,
     //
 };
 
@@ -290,6 +303,7 @@ void Game::changeLevel(unsigned int levelIndex)
   LevelSourceArray sourceArray = levelSources.at(levelIndex);
   level.loadFromDataArray(sourceArray);
 
+  mapWarps.clear();
   mapItems.clear();
   treasureChests.clear();
   enemies.clear();
@@ -345,6 +359,14 @@ void Game::changeLevel(unsigned int levelIndex)
         enemy->setMovementPath(8, path);
       }
       enemies.push_back(std::move(enemy));
+    }
+    else if (type == WARP_OBJ)
+    {
+      int destMapIndex = obj.getData().at(0);
+      int destColumn = obj.getData().at(1);
+      int destRow = obj.getData().at(2);
+      auto [warpColumn, warpRow] = obj.getCoordinates();
+      mapWarps.push_back(std::make_tuple(warpColumn, warpRow, destMapIndex, destColumn, destRow));
     }
   }
 }
@@ -703,6 +725,23 @@ void Game::checkForHeroVsTreasureChestCollisions(int lastColumn, int lastRow)
   }
 }
 
+void Game::checkForWarp(int testColumn, int testRow)
+{
+  for (auto warpData : mapWarps)
+  {
+    auto [warpColumn, warpRow, warpDestMapIndex, destColumn, destRow] = warpData;
+    if (warpColumn == testColumn && warpRow == testRow)
+    {
+      std::cout << "Hero stepped on warp tile at " << testColumn << ", " << testRow << std::endl;
+      unsigned int destMapIndex = static_cast<unsigned int>(warpDestMapIndex);
+      std::cout << "warp destination: map " << destMapIndex << " @ " << destColumn << ", " << destRow << std::endl;
+      changeLevel(destMapIndex);
+      hero.setPosition(destColumn, destRow);
+      return;
+    }
+  }
+}
+
 void Game::activateInventoryItemSlot(unsigned long slotNumber)
 {
   if (slotNumber >= heroItems.size())
@@ -802,6 +841,10 @@ void Game::handleHeroKeyPressedEvent(sf::Event &event)
       int lastColumn = heroColumn;
       int lastRow = heroRow;
       setHeroPosition(heroX, heroY);
+      if (tileId == OPENED_DOOR_TILE_ID)
+      {
+        checkForWarp(heroX, heroY);
+      }
       checkForHeroVsTreasureChestCollisions(lastColumn, lastRow);
       checkForHeroVsEnemyCollisions(lastColumn, lastRow);
       checkForHeroVsMapItemCollisions();

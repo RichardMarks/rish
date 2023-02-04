@@ -17,6 +17,7 @@ constexpr int USED_INVENTORY_ITEM = 3;
 constexpr int ITEM_DATA_STRIDE = 3;
 constexpr int TREASURE_CHEST_DATA_STRIDE = 5;
 constexpr int ENEMY_DATA_STRIDE = 3;
+constexpr int WARP_DATA_STRIDE = 5;
 
 constexpr int CHEST_UNLOCKED_CLOSED = 0;
 constexpr int CHEST_UNLOCKED_OPEN = 1;
@@ -28,6 +29,7 @@ constexpr int OPENED_DOOR_TILE_ID = 21;
 constexpr int MAP_ITEM_OBJ = 1000;
 constexpr int TREASURE_CHEST_OBJ = 2000;
 constexpr int ENEMY_OBJ = 3000;
+constexpr int WARP_OBJ = 4000;
 
 constexpr int SPIDER_ENEMY = 1;
 

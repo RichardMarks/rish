@@ -39,6 +39,7 @@ namespace rish
     unsigned int currentLevelIndex;
 
     Level level;
+    std::vector<std::tuple<int, int, int, int, int>> mapWarps;
     std::vector<MapItem> mapItems;
     std::vector<TreasureChest> treasureChests;
     std::vector<std::unique_ptr<Enemy>> enemies;
@@ -77,6 +78,7 @@ namespace rish
     void checkForHeroVsEnemyCollisionAt(int testColumn, int testRow);
     void checkForHeroVsEnemyCollisions(int lastColumn, int lastRow);
     void checkForHeroVsTreasureChestCollisions(int lastColumn, int lastRow);
+    void checkForWarp(int testColumn, int testRow);
     void activateInventoryItemSlot(unsigned long slotNumber);
     bool handleInventoryHotkeys(sf::Event &event);
     void handleHeroKeyPressedEvent(sf::Event &event);

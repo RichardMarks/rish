@@ -131,6 +131,29 @@ void Level::loadFromDataArray(int dataArray[])
     data.addObject(obj);
   }
 
+  int *mapWarpData = mapEnemyData;
+  mapWarpData += numEnemies * ENEMY_DATA_STRIDE;
+  int numWarps = mapWarpData[0];
+  mapWarpData++;
+  std::cout << "There are " << numWarps << " warps on the map" << std::endl;
+  for (int i = 0; i < numWarps; i++)
+  {
+    int base = (i * WARP_DATA_STRIDE);
+    int warpColumn = mapWarpData[base + 0];
+    int warpRow = mapWarpData[base + 1];
+    int warpDestMapIndex = mapWarpData[base + 2];
+    int warpDestColumn = mapWarpData[base + 3];
+    int warpDestRow = mapWarpData[base + 4];
+    std::cout << "[" << i << "] from " << warpColumn << ", " << warpRow << " to map " << warpDestMapIndex << " @ " << warpDestColumn << ", " << warpDestRow << std::endl;
+    LevelObject obj;
+    obj.setType(WARP_OBJ);
+    obj.setPosition(warpColumn, warpRow);
+    obj.getData().push_back(warpDestMapIndex);
+    obj.getData().push_back(warpDestColumn);
+    obj.getData().push_back(warpDestRow);
+    data.addObject(obj);
+  }
+
   std::cout << "load complete" << std::endl;
 }
 
