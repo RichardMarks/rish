@@ -19,8 +19,13 @@ sf::Sprite &Hero::getSprite()
   return sprite;
 }
 
-void Hero::setPosition(int newColumn, int newRow)
+void Hero::setPosition(int newColumn, int newRow, bool setRespawn)
 {
+  if (setRespawn)
+  {
+    respawnColumn = newColumn;
+    respawnRow = newRow;
+  }
   column = newColumn;
   row = newRow;
   sprite.setPosition(sf::Vector2f(TILE_WIDTH * column, TILE_HEIGHT * row));
@@ -101,4 +106,13 @@ void Hero::applyDamage(int amount)
 {
   damage(amount);
   updateHealthBar();
+}
+
+void Hero::respawn()
+{
+  setDead(false);
+  setDamaged(false);
+  health = maxHealth;
+  updateHealthBar();
+  setPosition(respawnColumn, respawnRow, false);
 }

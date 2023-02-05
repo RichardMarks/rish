@@ -13,6 +13,7 @@ extern MapItemState getMapItemState(const MapItem &item);
 extern void setMapItemState(MapItem &item, int mapItemState);
 extern const MapItemSprite &getMapItemSprite(const MapItem &item);
 extern MapItemId getMapItemId(const MapItem &item);
+extern void setMapItemCoordinates(MapItem &item, int column, int row);
 extern const MapItemCoordinate &getMapItemCoordinates(const MapItem &item);
 extern void setTreasureChestKind(TreasureChest &chest, TreasureChestKind chestKind);
 extern TreasureChestKind getTreasureChestKind(const TreasureChest &chest);

@@ -57,7 +57,7 @@ namespace rish
 
     void setupHero();
 
-    void addMapItem(TileId itemId, int itemColumn, int itemRow);
+    void addMapItem(TileId itemId, int itemColumn, int itemRow, int itemState);
     void setTreasureChestSprite(TreasureChest &chest);
     void addMapTreasureChest(int chestKind, int chestColumn, int chestRow, int chestContent, int chestQty);
     void setTilemapTileVertices(int mapIndex);
@@ -73,7 +73,8 @@ namespace rish
     bool handleOpenTreasureChestAction();
     bool handleOpenDoorAction();
     bool handleHeroInteractAction();
-    void checkForHeroVsMapItemCollisions();
+    bool isLocationEmpty(int column, int row);
+    void checkForHeroVsMapItemCollisions(int lastColumn, int lastRow);
     void setHeroPosition(int column, int row);
     void checkForHeroVsEnemyCollisionAt(int testColumn, int testRow);
     void checkForHeroVsEnemyCollisions(int lastColumn, int lastRow);

@@ -13,6 +13,7 @@ constexpr int TILE_HEIGHT = 16;
 constexpr int FIELD_ITEM = 1;
 constexpr int INVENTORY_ITEM = 2;
 constexpr int USED_INVENTORY_ITEM = 3;
+constexpr int KINETIC_FIELD_ITEM = 4;
 
 constexpr int ITEM_DATA_STRIDE = 3;
 constexpr int TREASURE_CHEST_DATA_STRIDE = 5;
@@ -25,6 +26,9 @@ constexpr int CHEST_LOCKED_CLOSED = 2;
 
 constexpr int CLOSED_DOOR_TILE_ID = 45;
 constexpr int OPENED_DOOR_TILE_ID = 21;
+
+constexpr int CRATE_TILE_ID = 63;
+constexpr int BARREL_TILE_ID = 82;
 
 constexpr int MAP_ITEM_OBJ = 1000;
 constexpr int TREASURE_CHEST_OBJ = 2000;

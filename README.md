@@ -51,7 +51,7 @@ A small rogue-like game developed with SFML and C++
 
 - slice 6
 
-  - maps should be populated with movable objects such as crates and barrels
-  - hero should not be able to move into the space a movable object occupies
-  - hero should be able to push a movable object when pressing attack
-  - movable objects should not move through solid walls or other movable objects
+  - ✅ maps should be populated with movable objects such as crates and barrels
+  - ✅ hero should not be able to move into the space a movable object occupies
+  - ✅ hero should be able to push a movable object when moving against the object
+  - ✅ movable objects should not move through solid walls or other movable objects

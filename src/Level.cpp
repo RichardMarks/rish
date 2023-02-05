@@ -73,6 +73,9 @@ void Level::loadFromDataArray(int dataArray[])
   mapItemData++;
 
   std::cout << "There are " << numMapItems << " items on the map" << std::endl;
+  std::set<TileId> kineticTileIds;
+  kineticTileIds.emplace(CRATE_TILE_ID);
+  kineticTileIds.emplace(BARREL_TILE_ID);
   for (int i = 0; i < numMapItems; i++)
   {
     int itemId = mapItemData[(i * ITEM_DATA_STRIDE) + 0];
@@ -83,7 +86,14 @@ void Level::loadFromDataArray(int dataArray[])
     obj.setType(MAP_ITEM_OBJ);
     obj.setPosition(itemColumn, itemRow);
     obj.getData().push_back(itemId);
-    obj.getData().push_back(FIELD_ITEM);
+    if (kineticTileIds.count(itemId))
+    {
+      obj.getData().push_back(KINETIC_FIELD_ITEM);
+    }
+    else
+    {
+      obj.getData().push_back(FIELD_ITEM);
+    }
     data.addObject(obj);
   }
 
@@ -387,6 +397,8 @@ void LevelData::removeAllProperties()
 
 void LevelData::addObject(const LevelObject &obj)
 {
+  std::cout << "LevelData::addObject" << std::endl;
+  std::cout << obj << std::endl;
   objects.push_back(obj);
 }
 

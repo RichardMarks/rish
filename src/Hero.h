@@ -15,6 +15,8 @@ namespace rish
 
     int column;
     int row;
+    int respawnColumn;
+    int respawnRow;
 
     int health;
     int maxHealth;
@@ -34,7 +36,7 @@ namespace rish
 
     sf::Sprite &getSprite();
 
-    void setPosition(int newColumn, int newRow);
+    void setPosition(int newColumn, int newRow, bool setRespawn = false);
     std::pair<int, int> getPosition();
     void setDead(bool isDead);
     bool isDead() const { return dead; }
@@ -48,6 +50,7 @@ namespace rish
 
     int getHealth() const { return health; }
     int getMaxHealth() const { return maxHealth; }
+    void respawn();
   };
 }
 

@@ -62,8 +62,11 @@ int secondMap[] = {
     //
     // BEGIN ITEMS DATA SECTION
     // NUM_ITEMS
-    0,
+    3,
     // ITEM_ID, COLUMN, ROW,
+    CRATE_TILE_ID, 4, 3,
+    CRATE_TILE_ID, 5, 2,
+    BARREL_TILE_ID, 2, 5,
     // 114 - health potion
     // 116 - mana potion
     // 114, 2, 2,
@@ -154,7 +157,7 @@ void Game::setup()
 
   levelSources.push_back(firstMap);
   levelSources.push_back(secondMap);
-  currentLevelIndex = 0;
+  currentLevelIndex = 1;
 
   setupHero();
   setupTilemap();
@@ -212,16 +215,16 @@ void Game::setupHero()
   hero.setGame(this);
   setSpriteTile(hero.getSprite(), 97, gfxTexture);
 
-  hero.setPosition(3, 3);
+  hero.setPosition(3, 3, true);
   hero.setDead(false);
   hero.setDamaged(false);
   hero.setMaxHealth(30);
 }
 
-void Game::addMapItem(TileId itemId, int itemColumn, int itemRow)
+void Game::addMapItem(TileId itemId, int itemColumn, int itemRow, int itemState)
 {
   MapItem item = std::make_tuple(
-      FIELD_ITEM,
+      itemState,
       std::make_unique<sf::Sprite>(),
       itemId,
       std::make_pair(itemColumn, itemRow));
@@ -316,8 +319,9 @@ void Game::changeLevel(unsigned int levelIndex)
     if (type == MAP_ITEM_OBJ)
     {
       int itemId = obj.getData().at(0);
+      int itemState = obj.getData().at(1);
       auto [itemColumn, itemRow] = obj.getCoordinates();
-      addMapItem(itemId, itemColumn, itemRow);
+      addMapItem(itemId, itemColumn, itemRow, itemState);
     }
     else if (type == TREASURE_CHEST_OBJ)
     {
@@ -662,7 +666,53 @@ bool Game::handleHeroInteractAction()
   return false;
 }
 
-void Game::checkForHeroVsMapItemCollisions()
+bool Game::isLocationEmpty(int column, int row)
+{
+  // outside of level?
+  if (column < 0 || column >= level.getData().getWidth() || row < 0 || row >= level.getData().getHeight())
+  {
+    return false;
+  }
+
+  TileId tileId = level.getData().getTile(column, row);
+
+  // is the tile walkable?
+  if (walkableTiles.count(tileId) == 0)
+  {
+    return false;
+  }
+
+  // is there a hazard tile?
+  if (hazardTiles.count(tileId) != 0)
+  {
+    return false;
+  }
+
+  // is there a map item?
+  for (auto &item : mapItems)
+  {
+    auto &coord = getMapItemCoordinates(item);
+    if (coord.first == column && coord.second == row)
+    {
+      return false;
+    }
+  }
+
+  // is there a treasure chest?
+  for (auto &chest : treasureChests)
+  {
+    auto &coords = getTreasureChestCoordinates(chest);
+    if (coords.first == column && coords.second == row)
+    {
+      return false;
+    }
+  }
+
+  // the space is empty (maybe an enemy though...)
+  return true;
+}
+
+void Game::checkForHeroVsMapItemCollisions(int lastColumn, int lastRow)
 {
   auto [heroColumn, heroRow] = hero.getPosition();
   for (auto &item : mapItems)
@@ -674,6 +724,27 @@ void Game::checkForHeroVsMapItemCollisions()
       if (coord.first == heroColumn && coord.second == heroRow)
       {
         collectMapItem(&item);
+      }
+    }
+    else if (state == KINETIC_FIELD_ITEM)
+    {
+      if (coord.first == heroColumn && coord.second == heroRow)
+      {
+        int dx = heroColumn - lastColumn;
+        int dy = heroRow - lastRow;
+
+        int toColumn = coord.first + dx;
+        int toRow = coord.second + dy;
+        if (isLocationEmpty(toColumn, toRow))
+        {
+          auto &spr = getMapItemSprite(item);
+          spr->move(sf::Vector2f(dx * TILE_WIDTH, dy * TILE_HEIGHT));
+          setMapItemCoordinates(item, coord.first + dx, coord.second + dy);
+        }
+        else
+        {
+          hero.setPosition(lastColumn, lastRow);
+        }
       }
     }
   }
@@ -847,7 +918,7 @@ void Game::handleHeroKeyPressedEvent(sf::Event &event)
       }
       checkForHeroVsTreasureChestCollisions(lastColumn, lastRow);
       checkForHeroVsEnemyCollisions(lastColumn, lastRow);
-      checkForHeroVsMapItemCollisions();
+      checkForHeroVsMapItemCollisions(lastColumn, lastRow);
       if (isHazardTile)
       {
         hero.setDamaged(true);
@@ -872,6 +943,11 @@ void Game::processEvents()
       {
         window.close();
       }
+      else if (event.key.code == sf::Keyboard::R)
+      {
+        changeLevel(currentLevelIndex);
+        hero.respawn();
+      }
       else
       {
         handleHeroKeyPressedEvent(event);
@@ -886,7 +962,7 @@ void Game::spawnRandomItemOnMapAt(int column, int row)
   int index = rollInt(0, itemsDatabase.size() - 1);
   auto it = itemsDatabase.begin();
   auto tileId = std::next(it, index)->first;
-  addMapItem(tileId, column, row);
+  addMapItem(tileId, column, row, FIELD_ITEM);
 }
 
 void Game::prepareRender()
@@ -924,7 +1000,7 @@ void Game::renderMapItems()
   {
     auto &spr = getMapItemSprite(item);
     auto state = getMapItemState(item);
-    if (state == FIELD_ITEM)
+    if (state == FIELD_ITEM || state == KINETIC_FIELD_ITEM)
     {
       window.draw(*(spr.get()));
     }
@@ -1063,6 +1139,12 @@ MapItemId getMapItemId(const MapItem &item)
   MapItemId mapItemId = std::get<2>(item);
   return mapItemId;
 };
+
+void setMapItemCoordinates(MapItem &item, int column, int row)
+{
+  std::get<3>(item).first = column;
+  std::get<3>(item).second = row;
+}
 
 const MapItemCoordinate &getMapItemCoordinates(const MapItem &item)
 {
