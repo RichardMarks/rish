@@ -55,3 +55,48 @@ A small rogue-like game developed with SFML and C++
   - ✅ hero should not be able to move into the space a movable object occupies
   - ✅ hero should be able to push a movable object when moving against the object
   - ✅ movable objects should not move through solid walls or other movable objects
+
+- slice 7
+
+  - level data should be loaded from files instead of hard-coded data arrays
+  - enemy movement data should be provided by level data
+  - maps should be populated by multiple enemy types
+  - enemy type data should be loaded from files
+
+- slice 8
+
+  - hero should have a logical facing direction in which attacks are directed
+  - hero should have a logical facing direction in which interactions are directed
+  - hero weapon should be visible momentarily when attacking
+
+- slice 9
+
+  - player should be able to switch between melee weapon and magic ranged weapon
+  - hero should have a mana bar like the health bar, positioned above the hero when magic weapon is equipped
+  - using magic weapon should consume mana
+  - hero should not be able to attack using magic if mana is depleted
+  - magic projectiles should travel until they hit an enemy or solid object
+
+- slice 10
+
+  - add sound effects for the hero movement, attacks, damage, interactions, and death
+  - add sound effects for the enemy movement, attacks, damage, and death
+  - add looping background music
+  - add fade to black screen transition when changing levels
+  - add fade from black screen transition when finished loading a level
+  - prevent hero from taking actions during screen transitions
+
+- slice 11
+
+  - game should begin with a fade from black screen transition to a title screen
+  - pressing space or enter on the title screen should transition to the play screen
+  - pressing escape on the title screen should exit the game
+  - pressing escape on the play screen should pause the game
+  - pause screen should show an arrow key navigable menu to resume or quit the game
+
+- slice 12
+
+  - when the hero health is depleted, game should transition to a game over screen
+  - game over screen should show an arrow key navigable menu to restart or quit the game
+  - choosing restart from the game over screen will restart from the current level
+  - choosing quit from the game over screen will return to the title screen
